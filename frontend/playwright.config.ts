@@ -38,5 +38,9 @@ export default defineConfig({
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
+    env: {
+      // E2E-only API key — allows recall broadcast API calls in tests
+      PARTNER_API_KEY: process.env.E2E_PARTNER_API_KEY || 'e2e-test-partner-key',
+    },
   },
 });
