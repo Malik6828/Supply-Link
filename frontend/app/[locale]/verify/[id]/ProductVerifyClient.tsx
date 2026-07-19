@@ -56,7 +56,7 @@ export default function ProductVerifyClient({ product, children }: ProductVerify
     <>
       {/* Emergency alert banners — shown above everything else */}
       {alerts.length > 0 && (
-        <div className="max-w-2xl mx-auto px-6 pt-4">
+        <div className="max-w-2xl mx-auto px-6 pt-4" data-testid="emergency-alerts-container">
           <EmergencyAlertBanner
             alerts={alerts}
             onAcknowledge={handleAcknowledge}
@@ -67,12 +67,15 @@ export default function ProductVerifyClient({ product, children }: ProductVerify
 
       {/* RECALLED Banner for deactivated products */}
       {!product.active && (
-        <div className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white px-6 py-4 mb-6 rounded-lg border-2 border-red-800">
+        <div
+          data-testid="product-recalled-banner"
+          className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white px-6 py-4 mb-6 rounded-lg border-2 border-red-800"
+        >
           <div className="max-w-2xl mx-auto flex items-start gap-3">
             <div className="text-2xl">⚠️</div>
             <div>
-              <h2 className="text-lg font-bold mb-1">PRODUCT RECALLED</h2>
-              <p className="text-sm text-red-50">
+              <h2 className="text-lg font-bold mb-1" data-testid="product-recalled-title">PRODUCT RECALLED</h2>
+              <p className="text-sm text-red-50" data-testid="product-recalled-description">
                 This product has been recalled and removed from sale. Do not use this product.
                 Please return it or dispose of it safely.
               </p>
