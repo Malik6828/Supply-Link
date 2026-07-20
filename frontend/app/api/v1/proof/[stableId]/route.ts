@@ -6,8 +6,11 @@ import { NextRequest, NextResponse } from 'next/server';
  * Returns the on-chain signer proof for a tracking event (#402).
  * External auditors can use this to validate signatures without full app trust.
  */
-export async function GET(_req: NextRequest, { params }: { params: { stableId: string } }) {
-  const { stableId } = params;
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ stableId: string }> },
+) {
+  const { stableId } = await params;
   if (!stableId) {
     return NextResponse.json({ error: 'stableId required' }, { status: 400 });
   }

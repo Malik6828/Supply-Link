@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
   for (const sub of subscriptions) {
     try {
-      await webpush.sendNotification(sub as webpush.PushSubscription, payload);
+      await webpush.sendNotification(sub as unknown as webpush.PushSubscription, payload);
       sent++;
     } catch {
       subscriptions.delete(sub);

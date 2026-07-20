@@ -172,7 +172,10 @@ async function createNewSubscription(
     }
 
     if (typeof policy.maxBackoffMs === 'number') {
-      if (policy.maxBackoffMs < policy.backoffMs || policy.maxBackoffMs > 86400000) {
+      if (
+        policy.maxBackoffMs < (typeof policy.backoffMs === 'number' ? policy.backoffMs : 0) ||
+        policy.maxBackoffMs > 86400000
+      ) {
         return apiError(
           req,
           400,

@@ -34,9 +34,10 @@ export function OPTIONS(request: NextRequest) {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { recordId: string } },
+  { params }: { params: Promise<{ recordId: string }> },
 ): Promise<NextResponse> {
   const start = Date.now();
+  const { recordId } = await params;
 
   const limited = applyRateLimit(
     request,
@@ -75,11 +76,11 @@ export async function GET(
     ? (JSON.parse(raw) as CertificationRegistryRecord[])
     : [];
 
-  const record = records.find((r) => r.id === resolvedParams.recordId);
+  const record = records.find((r) => r.id === recordId);
   if (!record) {
     return withCors(
       request,
-      apiError(request, 404, ErrorCode.NOT_FOUND, `Record '${resolvedParams.recordId}' not found`),
+      apiError(request, 404, ErrorCode.NOT_FOUND, `Record '${recordId}' not found`),
     );
   }
 

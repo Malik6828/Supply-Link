@@ -101,7 +101,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return withCors(
       request,
       apiError(request, 422, ErrorCode.VALIDATION_ERROR, 'Validation failed', {
-        details: parsed.error.flatten(),
+        details: parsed.error.issues.map((e) => ({
+          field: e.path.join('.'),
+          location: 'body' as const,
+          message: e.message,
+        })),
       }),
     );
   }

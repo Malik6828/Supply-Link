@@ -31,9 +31,10 @@ export function OPTIONS(request: NextRequest) {
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { recordId: string } },
+  { params }: { params: Promise<{ recordId: string }> },
 ): Promise<NextResponse> {
   const start = Date.now();
+  const { recordId } = await params;
 
   const limited = applyRateLimit(
     request,
@@ -80,7 +81,6 @@ export async function DELETE(
   }
 
   const { productId, issuerAddress } = parsed.data;
-  const recordId = resolvedParams.recordId;
 
   const raw = await kvStore.get(recordsKey(productId));
   const records: CertificationRegistryRecord[] = raw
