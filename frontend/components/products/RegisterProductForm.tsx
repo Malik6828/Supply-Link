@@ -62,7 +62,6 @@ export function RegisterProductForm({ open, onOpenChange }: Props) {
     setValue,
     watch,
     reset,
-    watch,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),

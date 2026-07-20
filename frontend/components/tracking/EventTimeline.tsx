@@ -1,17 +1,12 @@
 'use client';
 
-import { useState, useMemo } from "react";
-import type { TrackingEvent, EventType, EventFilter } from "@/lib/types";
-import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X } from "lucide-react";
-import { useState } from "react";
-import type { TrackingEvent } from "@/lib/types";
-import { ChevronDown, ChevronUp, Paperclip } from "lucide-react";
-import { EVENT_TYPE_CONFIG } from "@/lib/eventTypeConfig";
-import { applyFilter, extractActors, extractEventTypes } from "@/lib/stellar/contract";
+import { useState, useMemo } from 'react';
+import type { TrackingEvent, EventType, EventFilter } from '@/lib/types';
+import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, X, Paperclip } from 'lucide-react';
+import { EVENT_TYPE_CONFIG } from '@/lib/eventTypeConfig';
+import { applyFilter, extractActors, extractEventTypes } from '@/lib/stellar/contract';
 
 const PAGE_SIZE = 20;
-
-const EVENT_TYPES: EventType[] = ["HARVEST", "PROCESSING", "SHIPPING", "RETAIL"];
 
 // ── MetadataViewer ────────────────────────────────────────────────────────────
 
@@ -30,20 +25,6 @@ function MetadataViewer({ raw }: { raw: string }) {
   const hasOtherKeys = Object.keys(rest).length > 0;
 
   return (
-    <div className="mt-2">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-label={open ? "Hide metadata" : "Show metadata"}
-        className="flex items-center gap-1 text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
-      >
-        {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-        {open ? "Hide" : "Show"} metadata
-      </button>
-      {open && (
-        <pre className="mt-1 text-xs bg-[var(--muted-bg)] text-[var(--muted)] rounded-md px-3 py-2 overflow-x-auto">
-          {JSON.stringify(parsed, null, 2)}
-        </pre>
     <div className="mt-2 flex flex-col gap-1">
       {attachmentHref && (
         <a
@@ -59,7 +40,9 @@ function MetadataViewer({ raw }: { raw: string }) {
       {hasOtherKeys && (
         <>
           <button
-            onClick={() => setOpen((v: boolean) => !v)}
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-label={open ? 'Hide metadata' : 'Show metadata'}
             className="flex items-center gap-1 text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors w-fit"
           >
             {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -83,9 +66,13 @@ function EventCard({ event }: { event: TrackingEvent }) {
   const Icon = cfg.icon;
   return (
     <li className="ml-6">
-      <span className={`absolute -left-2 mt-1.5 h-4 w-4 rounded-full border-2 border-[var(--background)] ${cfg.dotClass}`} />
+      <span
+        className={`absolute -left-2 mt-1.5 h-4 w-4 rounded-full border-2 border-[var(--background)] ${cfg.dotClass}`}
+      />
       <div className="flex flex-wrap items-center gap-2 mb-1">
-        <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.badgeClass}`}>
+        <span
+          className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.badgeClass}`}
+        >
           <Icon size={11} />
           {cfg.label}
         </span>
@@ -93,7 +80,10 @@ function EventCard({ event }: { event: TrackingEvent }) {
           {new Date(event.timestamp).toLocaleString()}
         </span>
         {event.stableId && (
-          <span className="text-xs font-mono text-[var(--muted)] opacity-60" title={`Event ID: ${event.stableId}`}>
+          <span
+            className="text-xs font-mono text-[var(--muted)] opacity-60"
+            title={`Event ID: ${event.stableId}`}
+          >
             #{event.stableId.slice(0, 8)}
           </span>
         )}
@@ -162,7 +152,6 @@ export function EventTimeline({
       {/* Filter controls */}
       {showFilters && (
         <div className="flex flex-wrap gap-2 items-center">
-          {/* Event type chips */}
           {presentTypes.map((t) => {
             const cfg = EVENT_TYPE_CONFIG[t];
             const active = filter.eventType === t;
@@ -173,8 +162,8 @@ export function EventTimeline({
                 aria-pressed={active}
                 className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border transition-colors ${
                   active
-                    ? cfg.badgeClass + " border-transparent"
-                    : "border-[var(--card-border)] text-[var(--muted)] hover:bg-[var(--muted-bg)]"
+                    ? cfg.badgeClass + ' border-transparent'
+                    : 'border-[var(--card-border)] text-[var(--muted)] hover:bg-[var(--muted-bg)]'
                 }`}
               >
                 {t}
@@ -182,10 +171,9 @@ export function EventTimeline({
             );
           })}
 
-          {/* Actor filter */}
           {actors.length > 1 && (
             <select
-              value={filter.actor ?? ""}
+              value={filter.actor ?? ''}
               onChange={(e) => setActorFilter(e.target.value || null)}
               aria-label="Filter by actor"
               className="text-xs border border-[var(--card-border)] bg-[var(--background)] text-[var(--foreground)] rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
@@ -199,7 +187,6 @@ export function EventTimeline({
             </select>
           )}
 
-          {/* Clear filters */}
           {hasActiveFilter && (
             <button
               onClick={clearFilters}
@@ -215,9 +202,10 @@ export function EventTimeline({
         </div>
       )}
 
-      {/* Timeline */}
       {pageEvents.length === 0 ? (
-        <p className="text-sm text-[var(--muted)] py-4 text-center">No events match the current filters.</p>
+        <p className="text-sm text-[var(--muted)] py-4 text-center">
+          No events match the current filters.
+        </p>
       ) : (
         <ol className="relative border-l border-[var(--card-border)] ml-3 space-y-6">
           {pageEvents.map((event, i) => (
@@ -226,7 +214,6 @@ export function EventTimeline({
         </ol>
       )}
 
-      {/* Pagination */}
       {showPagination && totalPages > 1 && (
         <div className="flex items-center justify-between text-xs text-[var(--muted)]">
           <button
