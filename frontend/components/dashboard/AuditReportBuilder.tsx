@@ -24,7 +24,7 @@ export function AuditReportBuilder() {
   const [report, setReport] = useState<AuditReportData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const eventTypes = Array.from(new Set(events.map((e) => e.event_type)));
+  const eventTypes = Array.from(new Set(events.map((e) => e.eventType)));
 
   const handleGenerateReport = () => {
     setIsGenerating(true);

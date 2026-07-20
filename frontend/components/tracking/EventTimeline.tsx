@@ -105,6 +105,10 @@ interface EventTimelineProps {
   showFilters?: boolean;
   /** Show pagination controls. Default: true */
   showPagination?: boolean;
+  /** Currently highlighted event (e.g. from map hover). */
+  highlightedEvent?: TrackingEvent | null;
+  /** Called when the user selects an event in the timeline. */
+  onSelectEvent?: (event: TrackingEvent | null) => void;
 }
 
 export function EventTimeline({
