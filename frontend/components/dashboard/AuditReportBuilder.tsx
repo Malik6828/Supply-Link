@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useStore } from '@/lib/state/store';
+import { useProductsList } from '@/lib/state/selectors/products';
+import { useEventsList } from '@/lib/state/selectors/events';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, Download, FileJson, FileText } from 'lucide-react';
@@ -15,7 +16,8 @@ import {
 
 export function AuditReportBuilder() {
   const t = useTranslations('auditReport');
-  const { products, events } = useStore();
+  const products = useProductsList();
+  const events = useEventsList();
   const [startDate, setStartDate] = useState<string>(
     new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0],
   );
@@ -60,7 +62,9 @@ export function AuditReportBuilder() {
           {/* Date Range */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">{t('startDate')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('startDate')}
+              </label>
               <input
                 type="date"
                 value={startDate}
@@ -81,7 +85,9 @@ export function AuditReportBuilder() {
 
           {/* Event Type Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t('eventTypes')}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('eventTypes')}
+            </label>
             <div className="flex flex-wrap gap-2">
               {eventTypes.map((type) => (
                 <button
@@ -185,7 +191,8 @@ export function AuditReportBuilder() {
 }
 
 export function AuditReportBuilder() {
-  const { products, events } = useStore();
+  const products = useProductsList();
+  const events = useEventsList();
   const [startDate, setStartDate] = useState<string>(
     new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0],
   );

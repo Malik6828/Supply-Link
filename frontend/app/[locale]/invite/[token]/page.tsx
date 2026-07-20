@@ -9,6 +9,7 @@ import {
   FreighterNotInstalledError,
 } from '@/lib/stellar/client';
 import { useStore } from '@/lib/state/store';
+import { useWalletAddress } from '@/lib/state/selectors/wallet';
 import { FreighterNotInstalledModal } from '@/components/wallet/FreighterNotInstalledModal';
 
 type Status =
@@ -23,7 +24,8 @@ type Status =
 
 export default function InvitePage() {
   const { token } = useParams<{ token: string }>();
-  const { walletAddress, setWalletAddress } = useStore();
+  const walletAddress = useWalletAddress();
+  const setWalletAddress = useStore((s) => s.setWalletAddress);
 
   const [status, setStatus] = useState<Status>('validating');
   const [productId, setProductId] = useState<string | null>(null);

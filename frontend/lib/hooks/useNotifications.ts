@@ -1,7 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '@/lib/state/store';
+import { useProductsList } from '@/lib/state/selectors/products';
+import { useWalletAddress } from '@/lib/state/selectors/wallet';
+import { useNotificationsList, useUnreadNotificationsCount } from '@/lib/state/selectors/ui';
 import { contractClient } from '@/lib/stellar/contract';
 import { withRetry } from '@/lib/resilience';
 import type { Notification } from '@/lib/types';
@@ -165,14 +169,17 @@ export function buildContractErrorNotification(
 }
 
 export function useNotifications() {
-  const {
-    walletAddress,
-    products,
-    notifications,
-    addNotifications,
-    markNotificationRead,
-    markAllNotificationsRead,
-  } = useStore();
+  const walletAddress = useWalletAddress();
+  const products = useProductsList();
+  const notifications = useNotificationsList();
+  const unreadCount = useUnreadNotificationsCount();
+  const { addNotifications, markNotificationRead, markAllNotificationsRead } = useStore(
+    useShallow((s) => ({
+      addNotifications: s.addNotifications,
+      markNotificationRead: s.markNotificationRead,
+      markAllNotificationsRead: s.markAllNotificationsRead,
+    })),
+  );
 
   const seenTimestamps = useRef<Record<string, number>>({});
 
@@ -216,8 +223,6 @@ export function useNotifications() {
     const id = setInterval(poll, POLL_INTERVAL_MS);
     return () => clearInterval(id);
   }, [poll]);
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return { notifications, unreadCount, markNotificationRead, markAllNotificationsRead };
 }

@@ -8,6 +8,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X, RefreshCw } from 'lucide-react';
 import { registerProduct } from '@/lib/stellar/client';
 import { useStore } from '@/lib/state/store';
+import { useWalletAddress } from '@/lib/state/selectors/wallet';
 import { useToast } from '@/lib/hooks/useToast';
 import { ImageUpload } from '@/components/products/ImageUpload';
 import { productIdSchema } from '@/lib/validators';
@@ -31,7 +32,8 @@ interface Props {
 }
 
 export function RegisterProductForm({ open, onOpenChange }: Props) {
-  const { walletAddress, addProduct } = useStore();
+  const walletAddress = useWalletAddress();
+  const addProduct = useStore((s) => s.addProduct);
   const toast = useToast();
   const [pending, setPending] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | undefined>();

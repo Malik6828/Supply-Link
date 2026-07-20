@@ -19,8 +19,10 @@ export const createWalletSlice: StateCreator<SupplyLinkStore, [], [], WalletSlic
   disconnect: () =>
     set({
       walletAddress: null,
-      products: [],
-      events: [],
+      productsById: {},
+      productOrder: [],
+      eventsById: {},
+      eventOrder: [],
       lastFetched: null,
       productsLastFetched: null,
       eventsLastFetched: null,

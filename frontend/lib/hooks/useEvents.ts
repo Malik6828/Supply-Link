@@ -1,7 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '@/lib/state/store';
+import { useEventsList, useEventsStatus } from '@/lib/state/selectors/events';
 import { MOCK_EVENTS } from '@/lib/mock/products';
 import { notifyWebhooksOfNewEvent } from '@/lib/webhooks/client';
 import { withRetry, RetriesExhaustedError } from '@/lib/resilience';
@@ -10,25 +12,31 @@ import type { TrackingEvent } from '@/lib/types';
 const CACHE_TTL_MS = 60_000;
 
 export function useEvents() {
+  const events = useEventsList();
+  const status = useEventsStatus();
+  const eventsLastFetched = useStore((s) => s.eventsLastFetched);
   const {
-    events,
-    eventsLoading,
-    eventsError,
-    eventsLastFetched,
     setEvents,
-    setEventsLoading,
-    setEventsError,
+    setEventsStatus,
     setEventsLastFetched,
     addOptimisticEvent,
     confirmOptimisticEvent,
     removeOptimisticEvent,
-  } = useStore();
+  } = useStore(
+    useShallow((s) => ({
+      setEvents: s.setEvents,
+      setEventsStatus: s.setEventsStatus,
+      setEventsLastFetched: s.setEventsLastFetched,
+      addOptimisticEvent: s.addOptimisticEvent,
+      confirmOptimisticEvent: s.confirmOptimisticEvent,
+      removeOptimisticEvent: s.removeOptimisticEvent,
+    })),
+  );
 
   const [retrying, setRetrying] = useState(false);
 
   const fetchEvents = useCallback(async () => {
-    setEventsLoading(true);
-    setEventsError(null);
+    setEventsStatus({ state: 'loading' });
     setRetrying(false);
     try {
       await withRetry(
@@ -43,6 +51,7 @@ export function useEvents() {
         },
       );
       setRetrying(false);
+      setEventsStatus({ state: 'success' });
     } catch (err) {
       setRetrying(false);
       const msg =
@@ -51,12 +60,10 @@ export function useEvents() {
           : err instanceof Error
             ? err.message
             : 'Failed to load events';
-      setEventsError(msg);
+      setEventsStatus({ state: 'error', message: msg });
       setEvents(MOCK_EVENTS);
-    } finally {
-      setEventsLoading(false);
     }
-  }, [setEvents, setEventsLoading, setEventsError, setEventsLastFetched]);
+  }, [setEvents, setEventsStatus, setEventsLastFetched]);
 
   useEffect(() => {
     const now = Date.now();
@@ -90,9 +97,9 @@ export function useEvents() {
 
   return {
     events,
-    loading: eventsLoading,
+    loading: status.state === 'loading',
     retrying,
-    error: eventsError,
+    error: status.state === 'error' ? status.message : null,
     refresh,
     addEventOptimistic,
   };
