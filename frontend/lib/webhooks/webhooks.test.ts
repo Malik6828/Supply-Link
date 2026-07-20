@@ -122,12 +122,14 @@ describe('Webhook Delivery', () => {
       const signature = generateWebhookSignature(payload, secret);
 
       // Tamper with the payload
+      const event = payload.event;
+      if (event.type !== 'TRACKING_EVENT_CREATED') throw new Error('Unexpected event type');
       const tamperedPayload = {
         ...payload,
         event: {
-          ...payload.event,
+          ...event,
           data: {
-            ...payload.event.data,
+            ...event.data,
             location: 'Different Location',
           },
         },
@@ -265,14 +267,16 @@ describe('Webhook Delivery', () => {
       const payload = createWebhookPayload(event);
 
       expect(payload.event.type).toBe('TRACKING_EVENT_CREATED');
-      expect(payload.event.data).toEqual({
-        productId: 'prod-123',
-        location: 'Warehouse',
-        actor: 'user-456',
-        timestamp: 1234567890,
-        eventType: 'HARVEST',
-        metadata: '{"quantity": 100}',
-      });
+      if (payload.event.type === 'TRACKING_EVENT_CREATED') {
+        expect(payload.event.data).toEqual({
+          productId: 'prod-123',
+          location: 'Warehouse',
+          actor: 'user-456',
+          timestamp: 1234567890,
+          eventType: 'HARVEST',
+          metadata: '{"quantity": 100}',
+        });
+      }
       expect(payload.timestamp).toBeGreaterThan(0);
       expect(payload.id).toBeDefined();
     });
