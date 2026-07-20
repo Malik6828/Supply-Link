@@ -30,19 +30,32 @@ export async function GET(
 ): Promise<NextResponse> {
   const start = Date.now();
 
-  const limited = applyRateLimit(request, 'GET /api/v1/certification-registry/issuers/[address]', RATE_LIMIT_PRESETS.default);
-  if (limited) { recordRequest('GET /api/v1/certification-registry/issuers/[address]', 429, Date.now() - start); return limited; }
+  const limited = applyRateLimit(
+    request,
+    'GET /api/v1/certification-registry/issuers/[address]',
+    RATE_LIMIT_PRESETS.default,
+  );
+  if (limited) {
+    recordRequest('GET /api/v1/certification-registry/issuers/[address]', 429, Date.now() - start);
+    return limited;
+  }
 
   const auth = await authenticateApiRequest(request, 'partner');
-  if (auth.error) { recordRequest('GET /api/v1/certification-registry/issuers/[address]', 429, Date.now() - start); return auth.error; }
+  if (auth.error) {
+    recordRequest('GET /api/v1/certification-registry/issuers/[address]', 429, Date.now() - start);
+    return auth.error;
+  }
 
-  const raw = await kvStore.get(issuerKey(params.address));
+  const raw = await kvStore.get(issuerKey(resolvedParams.address));
   if (!raw) {
     return withCors(request, apiError(request, 404, ErrorCode.NOT_FOUND, 'Issuer not found'));
   }
 
   recordRequest('GET /api/v1/certification-registry/issuers/[address]', 200, Date.now() - start);
-  return withCors(request, withCorrelationId(request, NextResponse.json(JSON.parse(raw), { status: 200 })));
+  return withCors(
+    request,
+    withCorrelationId(request, NextResponse.json(JSON.parse(raw), { status: 200 })),
+  );
 }
 
 export async function DELETE(
@@ -51,20 +64,38 @@ export async function DELETE(
 ): Promise<NextResponse> {
   const start = Date.now();
 
-  const limited = applyRateLimit(request, 'DELETE /api/v1/certification-registry/issuers/[address]', RATE_LIMIT_PRESETS.default);
-  if (limited) { recordRequest('DELETE /api/v1/certification-registry/issuers/[address]', 429, Date.now() - start); return limited; }
+  const limited = applyRateLimit(
+    request,
+    'DELETE /api/v1/certification-registry/issuers/[address]',
+    RATE_LIMIT_PRESETS.default,
+  );
+  if (limited) {
+    recordRequest(
+      'DELETE /api/v1/certification-registry/issuers/[address]',
+      429,
+      Date.now() - start,
+    );
+    return limited;
+  }
 
   const auth = await authenticateApiRequest(request, 'partner');
-  if (auth.error) { recordRequest('DELETE /api/v1/certification-registry/issuers/[address]', 401, Date.now() - start); return auth.error; }
+  if (auth.error) {
+    recordRequest(
+      'DELETE /api/v1/certification-registry/issuers/[address]',
+      401,
+      Date.now() - start,
+    );
+    return auth.error;
+  }
 
-  const raw = await kvStore.get(issuerKey(params.address));
+  const raw = await kvStore.get(issuerKey(resolvedParams.address));
   if (!raw) {
     return withCors(request, apiError(request, 404, ErrorCode.NOT_FOUND, 'Issuer not found'));
   }
 
   const issuer = JSON.parse(raw) as CertificationIssuer;
   issuer.active = false;
-  await kvStore.set(issuerKey(params.address), JSON.stringify(issuer), TTL);
+  await kvStore.set(issuerKey(resolvedParams.address), JSON.stringify(issuer), TTL);
 
   recordRequest('DELETE /api/v1/certification-registry/issuers/[address]', 200, Date.now() - start);
   return withCors(request, withCorrelationId(request, NextResponse.json(true, { status: 200 })));
