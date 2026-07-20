@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { recordScan } from '@/lib/services/scanTracking';
-import { verifyQrProof, type QrProofResult } from '@/lib/services/offlineVerify';
 import type { Product } from '@/lib/types';
 import { EmergencyAlertBanner } from '@/components/products/EmergencyAlertBanner';
 import { listActiveAlerts } from '@/lib/services/emergencyAlerts';
@@ -18,11 +17,30 @@ type Mode = 'online' | 'offline';
 
 export default function ProductVerifyClient({ product, children }: ProductVerifyClientProps) {
   const [alerts, setAlerts] = useState<EmergencyAlert[]>([]);
+  const [mode, setMode] = useState<Mode>(
+    typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'online',
+  );
 
   useEffect(() => {
     // Load active emergency alerts for this product
     setAlerts(listActiveAlerts(product.id));
   }, [product.id]);
+
+  useEffect(() => {
+    // Keep mode in sync with network status
+    function handleOnline() {
+      setMode('online');
+    }
+    function handleOffline() {
+      setMode('offline');
+    }
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     // Record scan for recall notifications (online only)
@@ -74,7 +92,9 @@ export default function ProductVerifyClient({ product, children }: ProductVerify
           <div className="max-w-2xl mx-auto flex items-start gap-3">
             <div className="text-2xl">⚠️</div>
             <div>
-              <h2 className="text-lg font-bold mb-1" data-testid="product-recalled-title">PRODUCT RECALLED</h2>
+              <h2 className="text-lg font-bold mb-1" data-testid="product-recalled-title">
+                PRODUCT RECALLED
+              </h2>
               <p className="text-sm text-red-50" data-testid="product-recalled-description">
                 This product has been recalled and removed from sale. Do not use this product.
                 Please return it or dispose of it safely.
