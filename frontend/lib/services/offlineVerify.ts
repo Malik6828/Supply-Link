@@ -81,7 +81,12 @@ export async function verifyQrProof(token: string): Promise<QrProofResult> {
   }
 
   const key = await hmacKey(APP_SECRET);
-  const ok = await crypto.subtle.verify('HMAC', key, sigBytes, dataBytes);
+  const ok = await crypto.subtle.verify(
+    'HMAC',
+    key,
+    sigBytes.buffer as ArrayBuffer,
+    dataBytes.buffer as ArrayBuffer,
+  );
   if (!ok) return { valid: false, error: 'Signature verification failed' };
 
   try {

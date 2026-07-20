@@ -52,7 +52,7 @@ export interface IntegrityResult {
 const enc = new TextEncoder();
 
 async function sha256Bytes(data: Uint8Array): Promise<Uint8Array<ArrayBuffer>> {
-  const buf = (await crypto.subtle.digest('SHA-256', data)) as ArrayBuffer;
+  const buf = (await crypto.subtle.digest('SHA-256', data.buffer as ArrayBuffer)) as ArrayBuffer;
   return new Uint8Array(buf);
 }
 

@@ -275,6 +275,10 @@ export interface TrackingEvent {
   validationStatus?: ValidationStatus;
   /** Schema version of this record (#392) */
   schemaVersion?: number;
+  /** SHA-256 commitment hash of the private metadata blob (#391) */
+  metadataCommitment?: string;
+  /** Whether the metadata for this event is stored privately off-chain (#391) */
+  privateMetadata?: boolean;
 }
 
 // ── Pending events (#394) ─────────────────────────────────────────────────────
