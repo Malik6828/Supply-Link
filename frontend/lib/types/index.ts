@@ -483,6 +483,17 @@ export interface Delegation {
 
 /** Sustainability metrics associated with a product or event. */
 export interface SustainabilityMetadata {
+  /** Carbon footprint in kg CO2 equivalent */
+  carbon_footprint?: number;
+  /** Certification level: none | bronze | silver | gold | platinum */
+  certification_level?: string;
+  /** List of sustainable practices applied */
+  sustainable_practices?: string[];
+  /** Percentage of energy from renewable sources (0–100) */
+  renewable_energy_pct?: number;
+  /** Whether recyclable packaging is used */
+  recyclable_packaging?: boolean;
+  // Aliases kept for backwards compatibility
   carbonFootprint?: number;
   energySource?: string;
   recyclable?: boolean;

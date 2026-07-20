@@ -40,7 +40,4 @@ export interface SupplyLinkContractClient {
   register_product_alias(args: { canonical_id: string; alias: string }): Promise<boolean>;
 
   get_product_aliases(args: { canonical_id: string }): Promise<string[]>;
-
-  // Generic fallback for unknown methods
-  [key: string]: (...args: unknown[]) => Promise<unknown>;
 }
