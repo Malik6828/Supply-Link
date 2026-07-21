@@ -219,18 +219,20 @@ function FileClaimForm({ productId, onSuccess, onCancel }: FileClaimFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3">
+    <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3" data-testid="file-claim-form">
       <div className="flex flex-col gap-1">
         <label htmlFor="claim-description" className="text-xs font-medium">Issue description</label>
         <textarea id="claim-description" value={description} onChange={(e) => setDescription(e.target.value)}
           rows={3} maxLength={4096} required placeholder="Describe the defect or issue…"
-          className="px-3 py-2 rounded-lg border border-[var(--card-border)] bg-[var(--card)] text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none" />
+          className="px-3 py-2 rounded-lg border border-[var(--card-border)] bg-[var(--card)] text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+          data-testid="warranty-claim-description-input" />
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="claim-proof" className="text-xs font-medium">Proof reference <span className="text-[var(--muted)] font-normal">(IPFS CID or URL, optional)</span></label>
         <input id="claim-proof" type="text" value={proofRef} onChange={(e) => setProofRef(e.target.value)}
           maxLength={512} placeholder="ipfs://Qm… or https://…"
-          className="px-3 py-2 rounded-lg border border-[var(--card-border)] bg-[var(--card)] text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+          className="px-3 py-2 rounded-lg border border-[var(--card-border)] bg-[var(--card)] text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+          data-testid="warranty-claim-proof-input" />
       </div>
       <div className="flex gap-2">
         <button type="button" onClick={onCancel} disabled={pending}
@@ -238,7 +240,8 @@ function FileClaimForm({ productId, onSuccess, onCancel }: FileClaimFormProps) {
           Cancel
         </button>
         <button type="submit" disabled={pending}
-          className="flex-1 px-3 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+          className="flex-1 px-3 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          data-testid="warranty-claim-submit-btn">
           {pending ? <><Loader2 size={14} className="animate-spin" aria-hidden />Filing…</> : 'File Claim'}
         </button>
       </div>
@@ -282,18 +285,20 @@ function ClaimsList({ claims, productId, isOwner, onStatusUpdate }: ClaimsListPr
   }
 
   return (
-    <ul className="space-y-3" aria-label="Warranty claims">
+    <ul className="space-y-3" aria-label="Warranty claims" data-testid="warranty-claims-list">
       {claims.map((claim) => {
         const cfg = STATUS_CONFIG[claim.status];
         return (
-          <li key={claim.claimId} className="border border-[var(--card-border)] rounded-lg p-3 text-sm">
+          <li key={claim.claimId} className="border border-[var(--card-border)] rounded-lg p-3 text-sm"
+              data-testid="warranty-claim-item" data-claim-id={claim.claimId} data-claim-status={claim.status}>
             <div className="flex items-start justify-between gap-2 mb-1">
               <span className="font-mono text-xs text-[var(--muted)] truncate">{claim.claimId}</span>
-              <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${cfg.className}`}>
+              <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${cfg.className}`}
+                    data-testid="warranty-claim-status">
                 {cfg.label}
               </span>
             </div>
-            <p className="text-[var(--foreground)] mb-1">{claim.description}</p>
+            <p className="text-[var(--foreground)] mb-1" data-testid="warranty-claim-description">{claim.description}</p>
             {claim.proofRef && (
               <a href={claim.proofRef} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs text-violet-500 hover:underline mb-1">
@@ -304,11 +309,12 @@ function ClaimsList({ claims, productId, isOwner, onStatusUpdate }: ClaimsListPr
               Filed {fmtDate(claim.filedAt)} · Updated {fmtDate(claim.updatedAt)}
             </p>
             {isOwner && claim.status === 'Pending' && (
-              <div className="flex gap-2 mt-2">
+              <div className="flex gap-2 mt-2" data-testid="claim-action-buttons">
                 {(['Approved', 'Rejected', 'Resolved'] as ClaimStatus[]).map((s) => (
                   <button key={s} type="button" disabled={updatingId === claim.claimId}
                     onClick={() => handleStatusChange(claim.claimId, s)}
-                    className="px-2 py-1 rounded text-xs border border-[var(--card-border)] hover:bg-[var(--muted-bg)] transition-colors disabled:opacity-50">
+                    className="px-2 py-1 rounded text-xs border border-[var(--card-border)] hover:bg-[var(--muted-bg)] transition-colors disabled:opacity-50"
+                    data-testid={`claim-action-${s.toLowerCase()}`}>
                     {s}
                   </button>
                 ))}
@@ -366,10 +372,11 @@ export function WarrantyPanel({
   }
 
   return (
-    <div>
+    <div data-testid="warranty-panel">
       {/* Header */}
       <button type="button" onClick={() => setExpanded((v) => !v)}
-        className="flex items-center justify-between w-full text-left" aria-expanded={expanded}>
+        className="flex items-center justify-between w-full text-left" aria-expanded={expanded}
+        data-testid="warranty-panel-toggle">
         <div className="flex items-center gap-2">
           <Shield size={16} className="text-violet-500" aria-hidden />
           <span className="text-sm font-medium text-[var(--foreground)]">Warranty</span>
@@ -436,14 +443,15 @@ export function WarrantyPanel({
               )}
 
               {/* Claims section */}
-              <div>
+              <div data-testid="warranty-claims-section">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-xs font-semibold text-[var(--foreground)] uppercase tracking-wide">
                     Claims ({claims.length})
                   </h4>
                   {active && !showClaimForm && (
                     <button type="button" onClick={() => setShowClaimForm(true)}
-                      className="flex items-center gap-1 text-xs text-violet-500 hover:underline">
+                      className="flex items-center gap-1 text-xs text-violet-500 hover:underline"
+                      data-testid="file-claim-btn">
                       <Plus size={11} aria-hidden /> File claim
                     </button>
                   )}
