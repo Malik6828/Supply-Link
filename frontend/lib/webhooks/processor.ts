@@ -205,6 +205,8 @@ export async function notifyWebhooksOfProductEvent(
 /**
  * Re-attempt to send failed webhook deliveries that are due for retry.
  * Reads pending delivery attempts whose nextRetryAt has passed and retries each one.
+ * Safe to call repeatedly/concurrently — attempts that are no longer 'pending'
+ * (already resolved by another invocation) are simply skipped by the storage layer.
  */
 export async function retryFailedDeliveries(): Promise<void> {
   const pending = await getPendingDeliveryAttempts();
@@ -214,19 +216,17 @@ export async function retryFailedDeliveries(): Promise<void> {
     const webhook = await getWebhookById(attempt.webhookId);
     if (!webhook || !webhook.active) continue;
 
-    // Re-construct a minimal payload reference for the retry; only id and timestamp
-    // are needed by sendWebhook for signing and headers — the full payload body was
-    // already serialised in the original attempt, so we pass through what we have.
-    const stubPayload: WebhookPayload = {
-      id: attempt.payloadId,
-      timestamp: Date.now(),
-      // Payload event data is not available here; production systems would persist
-      // the full payload alongside the attempt. This stub is sufficient for the retry
-      // mechanism and is flagged for future enhancement.
-      event: { type: 'TRACKING_EVENT_CREATED', data: {} as any },
-    };
+    // Replay the exact original payload (persisted alongside the attempt) so
+    // retries deliver identical content to the original send, not a stub.
+    const payload: WebhookPayload = attempt.payloadData
+      ? (JSON.parse(attempt.payloadData) as WebhookPayload)
+      : {
+          id: attempt.payloadId,
+          timestamp: Date.now(),
+          event: { type: 'TRACKING_EVENT_CREATED', data: {} as any },
+        };
 
-    await sendWebhook(webhook, stubPayload, attempt.attemptNumber + 1, attempt.subscriptionId);
+    await sendWebhook(webhook, payload, attempt.attemptNumber + 1, attempt.subscriptionId);
   }
 }
 
