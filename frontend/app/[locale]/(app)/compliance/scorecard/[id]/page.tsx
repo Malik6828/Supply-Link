@@ -1,14 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle, Download, TrendingUp } from 'lucide-react';
 import type { TraceabilityScorecard } from '@/lib/compliance/traceabilityScorecard';
 
 interface ScorecardPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default function ScorecardPage({ params }: ScorecardPageProps) {
+  const { id } = use(params);
   const [scorecard, setScorecard] = useState<TraceabilityScorecard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +17,7 @@ export default function ScorecardPage({ params }: ScorecardPageProps) {
   useEffect(() => {
     async function fetchScorecard() {
       try {
-        const res = await fetch(`/api/v1/products/${params.id}/scorecard`, {
+        const res = await fetch(`/api/v1/products/${id}/scorecard`, {
           headers: { 'x-api-key': process.env.NEXT_PUBLIC_INTERNAL_API_KEY ?? '' },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -29,7 +30,7 @@ export default function ScorecardPage({ params }: ScorecardPageProps) {
       }
     }
     fetchScorecard();
-  }, [params.id]);
+  }, [id]);
 
   if (loading) {
     return (
@@ -93,6 +94,7 @@ export default function ScorecardPage({ params }: ScorecardPageProps) {
         <button
           onClick={handleExport}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          data-testid="scorecard-export-button"
         >
           <Download size={16} />
           Export Report
@@ -100,14 +102,20 @@ export default function ScorecardPage({ params }: ScorecardPageProps) {
       </div>
 
       {/* Overall Score Card */}
-      <div className="border border-[var(--card-border)] bg-[var(--card)] rounded-xl p-8 shadow-sm">
+      <div
+        className="border border-[var(--card-border)] bg-[var(--card)] rounded-xl p-8 shadow-sm"
+        data-testid="scorecard-overall-score"
+      >
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-[var(--muted)] mb-2">Overall Traceability Score</p>
             <p className="text-5xl font-bold text-[var(--foreground)]">{scorecard.overallScore}</p>
             <p className="text-xs text-[var(--muted)] mt-2">out of 100</p>
           </div>
-          <div className={`text-6xl font-bold rounded-lg p-6 ${gradeColor[scorecard.grade]}`}>
+          <div
+            className={`text-6xl font-bold rounded-lg p-6 ${gradeColor[scorecard.grade]}`}
+            data-testid="scorecard-grade"
+          >
             {scorecard.grade}
           </div>
         </div>
@@ -187,7 +195,7 @@ export default function ScorecardPage({ params }: ScorecardPageProps) {
 
       {/* Recommendations */}
       {scorecard.recommendations.length > 0 && (
-        <section>
+        <section data-testid="scorecard-gaps">
           <h2 className="text-lg font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">
             <AlertCircle size={20} className="text-yellow-600" />
             Recommendations

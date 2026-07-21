@@ -4,7 +4,7 @@
  * Generate a traceability scorecard for compliance reporting.
  * Returns metrics on supply chain completeness and compliance coverage.
  *
- * Authentication: partner tier or higher (x-api-key)
+ * Authentication: internal tier (x-api-key)
  * Rate limiting: publicRead preset
  */
 
@@ -41,7 +41,7 @@ export async function GET(
     return limited;
   }
 
-  const auth = await authenticateApiRequest(request, 'partner');
+  const auth = await authenticateApiRequest(request, 'internal');
   if (auth.error) {
     recordRequest(`GET /api/v1/products/${productId}/scorecard`, 401, Date.now() - start);
     return auth.error;

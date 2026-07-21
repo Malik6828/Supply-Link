@@ -29,7 +29,7 @@ const MIN_TIME_BETWEEN_STAGES = 3600; // 1 hour minimum
 export function calculateTraceabilityScore(
   productId: string,
   events: Array<{
-    event_type: string;
+    eventType: string;
     actor: string;
     timestamp: number;
     metadata: string;
@@ -58,7 +58,7 @@ export function calculateTraceabilityScore(
   const sortedEvents = [...events].sort((a, b) => a.timestamp - b.timestamp);
 
   // Event Coverage: % of expected stages present
-  const stagesPresent = new Set(sortedEvents.map((e) => e.event_type));
+  const stagesPresent = new Set(sortedEvents.map((e) => e.eventType));
   const eventCoverage = (stagesPresent.size / EXPECTED_STAGES.length) * 100;
 
   // Actor Diversity: unique actors / total events
@@ -90,8 +90,8 @@ export function calculateTraceabilityScore(
     RETAIL: 3,
   };
   for (let i = 1; i < sortedEvents.length; i++) {
-    const prevOrder = stageOrder[sortedEvents[i - 1].event_type] ?? -1;
-    const currOrder = stageOrder[sortedEvents[i].event_type] ?? -1;
+    const prevOrder = stageOrder[sortedEvents[i - 1].eventType] ?? -1;
+    const currOrder = stageOrder[sortedEvents[i].eventType] ?? -1;
     if (currOrder !== -1 && prevOrder !== -1 && currOrder < prevOrder) {
       complianceScore -= 25; // Major violation: out-of-order stages
     }
