@@ -1,4 +1,13 @@
 import { isConnected, signTransaction, getAddress } from '@stellar/freighter-api';
+import { contractClient } from './contract';
+import type {
+  Product,
+  Delegation,
+  ProductAssembly,
+  WarrantyInfo,
+  WarrantyClaim,
+  ClaimStatus,
+} from '../types';
 
 export type StellarNetwork = 'testnet' | 'mainnet';
 
@@ -84,10 +93,10 @@ export const NETWORK_PASSPHRASE = NETWORK_CONFIG.passphrase;
 
 export const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL ?? NETWORK_CONFIG.rpcUrl;
 
-/**
- * Stub: call register_product on the Soroban contract.
- * Returns a simulated transaction hash.
- */
+// ── Contract Operation Delegates ───────────────────────────────────────────
+// These functions delegate directly to the unified contractClient, ensuring
+// backwards compatibility for components while removing code duplication.
+
 export async function registerProduct(
   productId: string,
   name: string,
@@ -95,156 +104,88 @@ export async function registerProduct(
   description: string,
   callerAddress: string,
 ): Promise<string> {
-  console.log('registerProduct', { productId, name, origin, description, callerAddress });
-  // TODO: build + sign + submit Soroban transaction
-  await new Promise((r) => setTimeout(r, 1200));
-  return `mock_tx_${Date.now()}`;
+  return contractClient.registerProduct(
+    productId,
+    name,
+    origin,
+    callerAddress,
+    callerAddress,
+    description,
+  );
 }
 
-/**
- * Stub: call list_products on the Soroban contract (paginated).
- */
 export async function listProducts(
   page = 0,
   pageSize = 20,
-): Promise<{ products: import('../types').Product[]; total: number }> {
-  console.log('listProducts', { page, pageSize });
-  await new Promise((r) => setTimeout(r, 800));
-  return { products: [], total: 0 };
+): Promise<{ products: Product[]; total: number }> {
+  return contractClient.listProducts(page, pageSize);
 }
 
-/**
- * Stub: call transfer_ownership on the Soroban contract.
- * Replace body with real StellarSdk contract invocation.
- */
 export async function transferOwnership(
   productId: string,
   newOwner: string,
   callerAddress: string,
 ): Promise<void> {
-  console.log('transferOwnership', { productId, newOwner, callerAddress });
-  // TODO: build + sign + submit Soroban transaction
-  await new Promise((r) => setTimeout(r, 1000)); // simulate network delay
+  await contractClient.transferOwnership(productId, newOwner, callerAddress);
 }
 
-/**
- * Stub: call add_authorized_actor on the Soroban contract.
- * Replace body with real StellarSdk contract invocation.
- */
 export async function addAuthorizedActor(
   productId: string,
   actor: string,
   callerAddress: string,
 ): Promise<void> {
-  console.log('addAuthorizedActor', { productId, actor, callerAddress });
-  // TODO: build + sign + submit Soroban transaction
-  await new Promise((r) => setTimeout(r, 1000)); // simulate network delay
+  await contractClient.addAuthorizedActor(productId, actor, callerAddress);
 }
 
-/**
- * Stub: call remove_authorized_actor on the Soroban contract.
- * Replace body with real StellarSdk contract invocation.
- */
 export async function removeAuthorizedActor(
   productId: string,
   actor: string,
   callerAddress: string,
 ): Promise<void> {
-  console.log('removeAuthorizedActor', { productId, actor, callerAddress });
-  // TODO: build + sign + submit Soroban transaction
-  await new Promise((r) => setTimeout(r, 1000)); // simulate network delay
+  await contractClient.removeAuthorizedActor(productId, actor, callerAddress);
 }
 
-/**
- * Stub: call delegate_actor_authority on the Soroban contract.
- */
 export async function delegateActorAuthority(
   productId: string,
   delegatee: string,
   expiresAt: number,
   callerAddress: string,
 ): Promise<void> {
-  console.log('delegateActorAuthority', { productId, delegatee, expiresAt, callerAddress });
-  // TODO: build + sign + submit Soroban transaction
-  await new Promise((r) => setTimeout(r, 1000));
+  await contractClient.delegateActorAuthority(productId, delegatee, expiresAt, callerAddress);
 }
 
-/**
- * Stub: call revoke_delegate on the Soroban contract.
- */
 export async function revokeDelegate(
   productId: string,
   delegationId: number,
   callerAddress: string,
 ): Promise<void> {
-  console.log('revokeDelegate', { productId, delegationId, callerAddress });
-  // TODO: build + sign + submit Soroban transaction
-  await new Promise((r) => setTimeout(r, 1000));
+  await contractClient.revokeDelegate(productId, delegationId, callerAddress);
 }
 
-/**
- * Stub: call get_active_delegations on the Soroban contract.
- */
-export async function getActiveDelegations(
-  productId: string,
-): Promise<import('../types').Delegation[]> {
-  console.log('getActiveDelegations', { productId });
-  // TODO: read from Soroban contract
-  await new Promise((r) => setTimeout(r, 500));
-  return [];
+export async function getActiveDelegations(productId: string): Promise<Delegation[]> {
+  return contractClient.getActiveDelegations(productId);
 }
 
-// ── Assembly relationship stubs ───────────────────────────────────────────────
-
-/**
- * Stub: call register_assembly on the Soroban contract.
- * Registers a parent-child product assembly relationship on-chain.
- */
 export async function registerAssembly(
   parentId: string,
   componentIds: string[],
   description: string,
   callerAddress: string,
 ): Promise<string> {
-  console.log('registerAssembly', { parentId, componentIds, description, callerAddress });
-  // TODO: build + sign + submit Soroban transaction
-  await new Promise((r) => setTimeout(r, 1200));
-  return `mock_tx_assembly_${Date.now()}`;
+  return contractClient.registerAssembly(parentId, componentIds, description, callerAddress);
 }
 
-/**
- * Stub: call get_assembly on the Soroban contract.
- * Returns the assembly record for a parent product, or null if none exists.
- */
-export async function getAssembly(
-  parentId: string,
-): Promise<import('../types').ProductAssembly | null> {
-  console.log('getAssembly', { parentId });
-  // TODO: read from Soroban contract
-  await new Promise((r) => setTimeout(r, 500));
-  return null;
+export async function getAssembly(parentId: string): Promise<ProductAssembly | null> {
+  return contractClient.getAssembly(parentId);
 }
 
-/**
- * Stub: call get_parents_of_component on the Soroban contract.
- * Returns all parent product IDs that reference the given component.
- */
 export async function getParentsOfComponent(
   componentId: string,
   candidateParentIds: string[],
 ): Promise<string[]> {
-  console.log('getParentsOfComponent', { componentId, candidateParentIds });
-  // TODO: read from Soroban contract
-  await new Promise((r) => setTimeout(r, 500));
-  return [];
+  return contractClient.getParentsOfComponent(componentId, candidateParentIds);
 }
 
-// ── Warranty stubs ────────────────────────────────────────────────────────────
-
-/**
- * Stub: call register_warranty on the Soroban contract.
- * Registers warranty metadata for a product on-chain.
- */
 export async function registerWarranty(
   productId: string,
   durationSeconds: number,
@@ -252,54 +193,27 @@ export async function registerWarranty(
   termsRef: string,
   callerAddress: string,
 ): Promise<string> {
-  console.log('registerWarranty', { productId, durationSeconds, terms, termsRef, callerAddress });
-  // TODO: build + sign + submit Soroban transaction
-  await new Promise((r) => setTimeout(r, 1200));
-  return `mock_tx_warranty_${Date.now()}`;
+  return contractClient.registerWarranty(
+    productId,
+    durationSeconds,
+    terms,
+    termsRef,
+    callerAddress,
+  );
 }
 
-/**
- * Stub: call get_warranty on the Soroban contract.
- * Returns warranty metadata for a product, or null if none exists.
- */
-export async function getWarranty(
-  productId: string,
-): Promise<import('../types').WarrantyInfo | null> {
-  console.log('getWarranty', { productId });
-  // TODO: read from Soroban contract
-  await new Promise((r) => setTimeout(r, 500));
-  return null;
+export async function getWarranty(productId: string): Promise<WarrantyInfo | null> {
+  return contractClient.getWarranty(productId);
 }
 
-/**
- * Stub: call void_warranty on the Soroban contract.
- * Voids the warranty for a product (owner-only).
- */
-export async function voidWarranty(
-  productId: string,
-  callerAddress: string,
-): Promise<string> {
-  console.log('voidWarranty', { productId, callerAddress });
-  // TODO: build + sign + submit Soroban transaction
-  await new Promise((r) => setTimeout(r, 1000));
-  return `mock_tx_void_warranty_${Date.now()}`;
+export async function voidWarranty(productId: string, callerAddress: string): Promise<string> {
+  return contractClient.voidWarranty(productId, callerAddress);
 }
 
-/**
- * Stub: call is_warranty_active on the Soroban contract.
- * Returns true if the product has an active, non-voided warranty.
- */
 export async function isWarrantyActive(productId: string): Promise<boolean> {
-  console.log('isWarrantyActive', { productId });
-  // TODO: read from Soroban contract
-  await new Promise((r) => setTimeout(r, 300));
-  return false;
+  return contractClient.isWarrantyActive(productId);
 }
 
-/**
- * Stub: call file_warranty_claim on the Soroban contract.
- * Files a warranty claim against a product.
- */
 export async function fileWarrantyClaim(
   productId: string,
   claimId: string,
@@ -307,37 +221,18 @@ export async function fileWarrantyClaim(
   proofRef: string,
   callerAddress: string,
 ): Promise<string> {
-  console.log('fileWarrantyClaim', { productId, claimId, description, proofRef, callerAddress });
-  // TODO: build + sign + submit Soroban transaction
-  await new Promise((r) => setTimeout(r, 1200));
-  return `mock_tx_claim_${Date.now()}`;
+  return contractClient.fileWarrantyClaim(productId, claimId, description, proofRef, callerAddress);
 }
 
-/**
- * Stub: call list_warranty_claims on the Soroban contract.
- * Returns all warranty claims for a product.
- */
-export async function listWarrantyClaims(
-  productId: string,
-): Promise<import('../types').WarrantyClaim[]> {
-  console.log('listWarrantyClaims', { productId });
-  // TODO: read from Soroban contract
-  await new Promise((r) => setTimeout(r, 500));
-  return [];
+export async function listWarrantyClaims(productId: string): Promise<WarrantyClaim[]> {
+  return contractClient.listWarrantyClaims(productId);
 }
 
-/**
- * Stub: call update_claim_status on the Soroban contract.
- * Updates the status of a warranty claim (owner-only).
- */
 export async function updateClaimStatus(
   productId: string,
   claimId: string,
-  newStatus: import('../types').ClaimStatus,
+  newStatus: ClaimStatus,
   callerAddress: string,
 ): Promise<string> {
-  console.log('updateClaimStatus', { productId, claimId, newStatus, callerAddress });
-  // TODO: build + sign + submit Soroban transaction
-  await new Promise((r) => setTimeout(r, 1000));
-  return `mock_tx_claim_status_${Date.now()}`;
+  return contractClient.updateClaimStatus(productId, claimId, newStatus, callerAddress);
 }
