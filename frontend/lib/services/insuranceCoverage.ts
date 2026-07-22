@@ -4,8 +4,13 @@
  * Stores and verifies insurance coverage data, claim proof references,
  * premium calculations, risk assessments, and blockchain-verified certificates
  * for products. In production this would be backed by on-chain Soroban
- * contract storage.
+ * contract storage. Records are persisted through the shared KV repository
+ * (`createCollection`) so they survive across serverless invocations when a KV
+ * backend is configured, falling back to the shared in-memory backend in
+ * dev/test.
  */
+
+import { createCollection } from '@/lib/store';
 
 export type InsuranceStatus = 'active' | 'expired' | 'claimed' | 'voided';
 export type ClaimProofStatus = 'pending' | 'verified' | 'rejected';
@@ -340,7 +345,7 @@ export function getCertificate(certificateId: string): InsuranceCertificate | nu
 }
 
 export function listCertificatesForCoverage(coverageId: string): InsuranceCertificate[] {
-  return Array.from(certificateStore.values()).filter((c) => c.coverageId === coverageId);
+  return certificateStore.all().filter((c) => c.coverageId === coverageId);
 }
 
 export interface InsuranceCoverage {
@@ -399,10 +404,10 @@ export interface ClaimProof {
   verifierNotes?: string;
 }
 
-// ── In-memory stores (replace with DB / on-chain in production) ──────────────
+// ── Persistent stores (shared KV repository) ─────────────────────────────────
 
-const coverageStore = new Map<string, InsuranceCoverage>();
-const certificateStore = new Map<string, InsuranceCertificate>();
+const coverageStore = createCollection<InsuranceCoverage>('insurance-coverage');
+const certificateStore = createCollection<InsuranceCertificate>('insurance-certificate');
 
 // ── Coverage CRUD ─────────────────────────────────────────────────────────────
 
@@ -447,7 +452,8 @@ export function getCoverage(id: string): InsuranceCoverage | null {
 }
 
 export function listCoverageForProduct(productId: string): InsuranceCoverage[] {
-  return Array.from(coverageStore.values())
+  return coverageStore
+    .all()
     .filter((c) => c.productId === productId)
     .sort((a, b) => b.createdAt - a.createdAt);
 }

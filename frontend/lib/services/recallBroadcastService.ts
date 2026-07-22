@@ -1,4 +1,5 @@
 import type { Product } from '@/lib/types';
+import { createCollection } from '@/lib/store';
 
 export interface RecallBroadcast {
   id: string;
@@ -35,9 +36,11 @@ export interface RecallNotification {
   acknowledgedAt?: number;
 }
 
-// In-memory storage (would be database in production)
-const broadcasts = new Map<string, RecallBroadcast>();
-const notifications = new Map<string, RecallNotification[]>();
+// Persistent storage (shared KV repository).
+// `broadcasts` is keyed by broadcast id; `notifications` is keyed by
+// stakeholder and holds that stakeholder's notification list.
+const broadcasts = createCollection<RecallBroadcast>('recall-broadcast');
+const notifications = createCollection<RecallNotification[]>('recall-notification');
 
 export function initiateBroadcast(
   product: Product,
@@ -77,10 +80,9 @@ export function initiateBroadcast(
       acknowledged: false,
     };
 
-    if (!notifications.has(stakeholder)) {
-      notifications.set(stakeholder, []);
-    }
-    notifications.get(stakeholder)!.push(notification);
+    const stakeholderNotifications = notifications.get(stakeholder) ?? [];
+    stakeholderNotifications.push(notification);
+    notifications.set(stakeholder, stakeholderNotifications);
 
     // Log broadcast event
     broadcast.broadcastLog.push({
@@ -96,15 +98,15 @@ export function initiateBroadcast(
 }
 
 export function getBroadcast(id: string): RecallBroadcast | undefined {
-  return broadcasts.get(id);
+  return broadcasts.get(id) ?? undefined;
 }
 
 export function getAllBroadcasts(): RecallBroadcast[] {
-  return Array.from(broadcasts.values());
+  return broadcasts.all();
 }
 
 export function getActiveBroadcasts(): RecallBroadcast[] {
-  return Array.from(broadcasts.values()).filter((b) => b.status === 'active');
+  return broadcasts.all().filter((b) => b.status === 'active');
 }
 
 export function getStakeholderNotifications(stakeholder: string): RecallNotification[] {
@@ -122,6 +124,7 @@ export function acknowledgeNotification(
   if (notification) {
     notification.acknowledged = true;
     notification.acknowledgedAt = Date.now();
+    notifications.set(stakeholder, stakeholderNotifications);
 
     // Update broadcast log
     const broadcast = broadcasts.get(broadcastId);
@@ -129,6 +132,7 @@ export function acknowledgeNotification(
       const logEntry = broadcast.broadcastLog.find((e) => e.stakeholder === stakeholder);
       if (logEntry) {
         logEntry.status = 'acknowledged';
+        broadcasts.set(broadcastId, broadcast);
       }
     }
   }
@@ -138,17 +142,17 @@ export function acknowledgeNotification(
 
 export function resolveBroadcast(id: string): RecallBroadcast | undefined {
   const broadcast = broadcasts.get(id);
-  if (broadcast) {
-    broadcast.status = 'resolved';
-  }
+  if (!broadcast) return undefined;
+  broadcast.status = 'resolved';
+  broadcasts.set(id, broadcast);
   return broadcast;
 }
 
 export function cancelBroadcast(id: string): RecallBroadcast | undefined {
   const broadcast = broadcasts.get(id);
-  if (broadcast) {
-    broadcast.status = 'cancelled';
-  }
+  if (!broadcast) return undefined;
+  broadcast.status = 'cancelled';
+  broadcasts.set(id, broadcast);
   return broadcast;
 }
 
@@ -159,8 +163,8 @@ export function getBroadcastStats(): {
   totalNotifications: number;
   acknowledgedNotifications: number;
 } {
-  const allBroadcasts = Array.from(broadcasts.values());
-  const allNotifications = Array.from(notifications.values()).flat();
+  const allBroadcasts = broadcasts.all();
+  const allNotifications = notifications.all().flat();
 
   return {
     totalBroadcasts: allBroadcasts.length,
