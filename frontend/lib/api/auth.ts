@@ -70,8 +70,8 @@ async function checkRateLimit(
   try {
     const stored = await kvStore.get(kvKey);
     if (stored) {
-      record = JSON.parse(stored);
-      if (record.expiresAt <= now) {
+      record = JSON.parse(stored) as RateLimitRecord;
+      if (record && record.expiresAt <= now) {
         record = null;
         await kvStore.del(kvKey);
       }
@@ -97,10 +97,11 @@ async function checkRateLimit(
 
   // Check burst window if configured
   if (config.burstLimit && config.burstWindowMs) {
-    const burstTimestamps = validTimestamps.filter((t) => now - t < config.burstWindowMs);
+    const burstWindowMs = config.burstWindowMs;
+    const burstTimestamps = validTimestamps.filter((t) => now - t < burstWindowMs);
     if (burstTimestamps.length >= config.burstLimit) {
       const oldest = burstTimestamps[0];
-      const retryAfter = Math.ceil((oldest + config.burstWindowMs - now) / 1000);
+      const retryAfter = Math.ceil((oldest + burstWindowMs - now) / 1000);
       return { allowed: false, retryAfter: Math.max(1, retryAfter) };
     }
   }
@@ -170,7 +171,7 @@ export async function authenticateApiRequest(
   if (!rateLimitResult.allowed) {
     return {
       error: apiError(request, 429, ErrorCode.RATE_LIMITED, 'API key rate limit exceeded', {
-        'Retry-After': String(rateLimitResult.retryAfter),
+        headers: { 'Retry-After': String(rateLimitResult.retryAfter) },
       }),
     };
   }

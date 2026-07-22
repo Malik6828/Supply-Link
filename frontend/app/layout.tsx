@@ -4,7 +4,6 @@ import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { QueryProvider } from '@/components/QueryProvider';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
-import { InstallPrompt } from '@/components/InstallPrompt';
 import { Toaster } from 'sonner';
 
 const geist = Geist({ subsets: ['latin'] });
@@ -37,7 +36,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           >
             {children}
             <Toaster richColors position="bottom-right" />
-            <InstallPrompt />
           </ThemeProvider>
         </QueryProvider>
         <ServiceWorkerRegistration />

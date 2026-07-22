@@ -10,7 +10,7 @@
 
 // ── Secret registry ───────────────────────────────────────────────────────────
 
-export type SecretCriticality = "critical" | "optional";
+export type SecretCriticality = 'critical' | 'optional';
 
 interface SecretSpec {
   /** Environment variable name */
@@ -36,23 +36,23 @@ function minLength(n: number) {
 
 export const SECRET_REGISTRY: SecretSpec[] = [
   {
-    key: "STELLAR_FEE_BUMP_SECRET",
-    criticality: "critical",
+    key: 'STELLAR_FEE_BUMP_SECRET',
+    criticality: 'critical',
     validate: validateStellarSecret,
   },
   {
-    key: "BLOB_READ_WRITE_TOKEN",
-    criticality: "optional",
+    key: 'BLOB_READ_WRITE_TOKEN',
+    criticality: 'optional',
     validate: minLength(10),
   },
   {
-    key: "KV_REST_API_URL",
-    criticality: "optional",
-    validate: (v) => (v.startsWith("https://") ? null : "must be an https:// URL"),
+    key: 'KV_REST_API_URL',
+    criticality: 'optional',
+    validate: (v) => (v.startsWith('https://') ? null : 'must be an https:// URL'),
   },
   {
-    key: "KV_REST_API_TOKEN",
-    criticality: "optional",
+    key: 'KV_REST_API_TOKEN',
+    criticality: 'optional',
     validate: minLength(10),
   },
 ];
@@ -69,7 +69,7 @@ export interface SecretValidationResult {
 }
 
 export function validateSecrets(
-  env: NodeJS.ProcessEnv = process.env
+  env: Record<string, string | undefined> = process.env,
 ): SecretValidationResult[] {
   return SECRET_REGISTRY.map((spec) => {
     const value = env[spec.key];
@@ -79,7 +79,7 @@ export function validateSecrets(
         criticality: spec.criticality,
         present: false,
         valid: false,
-        reason: "not set",
+        reason: 'not set',
       };
     }
     const formatError = spec.validate?.(value) ?? null;
@@ -95,10 +95,10 @@ export function validateSecrets(
 
 /** Returns true only if all critical secrets are present and valid. */
 export function areCriticalSecretsValid(
-  env: NodeJS.ProcessEnv = process.env
+  env: Record<string, string | undefined> = process.env,
 ): boolean {
   return validateSecrets(env)
-    .filter((r) => r.criticality === "critical")
+    .filter((r) => r.criticality === 'critical')
     .every((r) => r.valid);
 }
 
@@ -107,18 +107,18 @@ export function areCriticalSecretsValid(
 export class SecretMissingError extends Error {
   constructor(public readonly key: string) {
     super(`Required secret '${key}' is not configured`);
-    this.name = "SecretMissingError";
+    this.name = 'SecretMissingError';
   }
 }
 
 export class SecretInvalidError extends Error {
   constructor(
     public readonly key: string,
-    reason: string
+    reason: string,
   ) {
     // reason describes the format problem, never the value
     super(`Secret '${key}' failed validation: ${reason}`);
-    this.name = "SecretInvalidError";
+    this.name = 'SecretInvalidError';
   }
 }
 
@@ -128,7 +128,7 @@ export class SecretInvalidError extends Error {
  */
 export function requireSecret(
   key: string,
-  env: NodeJS.ProcessEnv = process.env
+  env: Record<string, string | undefined> = process.env,
 ): string {
   const spec = SECRET_REGISTRY.find((s) => s.key === key);
   const value = env[key];
@@ -148,15 +148,15 @@ export function requireSecret(
  */
 export function redactSecrets(
   input: string,
-  env: NodeJS.ProcessEnv = process.env
+  env: Record<string, string | undefined> = process.env,
 ): string {
   let result = input;
   for (const spec of SECRET_REGISTRY) {
     const value = env[spec.key];
     if (value && value.length >= 8) {
       // Escape special regex chars in the secret value
-      const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      result = result.replace(new RegExp(escaped, "g"), "[REDACTED]");
+      const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      result = result.replace(new RegExp(escaped, 'g'), '[REDACTED]');
     }
   }
   return result;

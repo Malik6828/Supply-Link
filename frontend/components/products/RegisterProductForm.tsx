@@ -1,22 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, RefreshCw } from 'lucide-react';
+import { X, RefreshCw, WifiOff } from 'lucide-react';
 import { registerProduct } from '@/lib/stellar/client';
 import { useStore } from '@/lib/state/store';
+import { useWalletAddress } from '@/lib/state/selectors/wallet';
 import { useToast } from '@/lib/hooks/useToast';
 import { ImageUpload } from '@/components/products/ImageUpload';
 import { productIdSchema } from '@/lib/validators';
+import { useOfflineDraft } from '@/lib/hooks/useOfflineDraft';
+import { PRODUCT_TAXONOMY } from '@/lib/taxonomy';
 
 const schema = z.object({
   id: productIdSchema,
   name: z.string().min(2, 'Name must be at least 2 characters'),
   origin: z.string().min(2, 'Origin is required'),
   description: z.string().optional(),
+  category: z.string().optional(),
+  subcategory: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -31,7 +36,8 @@ interface Props {
 }
 
 export function RegisterProductForm({ open, onOpenChange }: Props) {
-  const { walletAddress, addProduct } = useStore();
+  const walletAddress = useWalletAddress();
+  const addProduct = useStore((s) => s.addProduct);
   const toast = useToast();
   const [pending, setPending] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | undefined>();
@@ -62,7 +68,6 @@ export function RegisterProductForm({ open, onOpenChange }: Props) {
     setValue,
     watch,
     reset,
-    watch,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -70,6 +75,8 @@ export function RegisterProductForm({ open, onOpenChange }: Props) {
   });
 
   const formValues = watch();
+  const selectedCategory = PRODUCT_TAXONOMY.find((c) => c.id === formValues.category) ?? null;
+  const subcategories = selectedCategory?.subcategories ?? [];
 
   useEffect(() => {
     if (open) saveDraft(formValues);

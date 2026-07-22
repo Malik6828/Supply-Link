@@ -226,45 +226,10 @@ export interface Product {
   subcategory?: string;
   /** On-chain certifications attached to this product (#428) */
   certifications?: Certification[];
-}
-
-export interface Batch {
-  id: string;
-  name: string;
-  owner: string;
-  productIds: string[];
-  timestamp: number;
-  active: boolean;
-  status?: ProductStatus;
-  authorizedActors: string[];
-  ownershipHistory?: OwnershipRecord[];
-  /** Current lifecycle stage (#404) */
-  lifecycleStage?: LifecycleStage;
-  pending?: boolean;
   /** Number of signatures required for events (0 or 1 = immediate, >1 = multi-sig) */
   requiredSignatures?: number;
-  /** true while an on-chain transaction is in-flight (#49) */
-  pending?: boolean;
-  /** Whether this product has been recalled (#393) */
-  recalled?: boolean;
-  /** Reason provided when the product was recalled (#393) */
-  recallReason?: string;
-  /** Ledger timestamp when the product was recalled; 0 if never recalled (#393) */
-  recallTimestamp?: number;
-  /** Schema version of this record (#392) */
-  schemaVersion?: number;
-  /** Off-chain image URL stored in product metadata (#112) */
-  imageUrl?: string;
-  /** Taxonomy category ID (#425) */
-  category?: string;
-  /** Taxonomy subcategory ID (#425) */
-  subcategory?: string;
-  /** On-chain certifications attached to this product (#428) */
-  certifications?: Certification[];
-  /** Number of signatures required for events (0 or 1 = immediate, >1 = multi-sig) */
-  requiredSignatures?: number;
-  /** Current lifecycle stage (#404) */
-  lifecycleStage?: LifecycleStage;
+  /** Provenance-based pricing metadata (#479) */
+  pricing?: ProductPricingMetadata;
   /** Assembly relationship — present if this product is assembled from components. */
   assembly?: ProductAssembly;
   /** Warranty metadata — present if a warranty has been registered. */
@@ -308,6 +273,12 @@ export interface TrackingEvent {
   seq?: number;
   /** Async validation status for this event (#475) */
   validationStatus?: ValidationStatus;
+  /** Schema version of this record (#392) */
+  schemaVersion?: number;
+  /** SHA-256 commitment hash of the private metadata blob (#391) */
+  metadataCommitment?: string;
+  /** Whether the metadata for this event is stored privately off-chain (#391) */
+  privateMetadata?: boolean;
 }
 
 // ── Pending events (#394) ─────────────────────────────────────────────────────
@@ -347,16 +318,6 @@ export interface EventPage {
   pending?: boolean;
   /** Schema version of this record (#392) */
   schemaVersion?: number;
-}
-
-export interface PendingEvent {
-  pendingEventId: number;
-  productId: string;
-  event: TrackingEvent;
-  approvals: string[];
-  requiredSignatures: number;
-  createdAt: number;
-  expiration?: number;
 }
 
 // ── Notifications ─────────────────────────────────────────────────────────────
@@ -462,4 +423,96 @@ export interface CertificationVerificationResult {
   valid: boolean;
   record: CertificationRegistryRecord;
   issuer?: CertificationIssuer;
+}
+
+// ── Auditor registry ──────────────────────────────────────────────────────────
+
+export interface Auditor {
+  address: string;
+  name: string;
+  active: boolean;
+  registeredAt: number;
+}
+
+// ── Attestations ──────────────────────────────────────────────────────────────
+
+export interface Attestation {
+  id: string;
+  productId: string;
+  /** Event stable ID this attestation targets; empty string = product-level. */
+  targetId: string;
+  auditor: string;
+  attestationType: string;
+  signature: string;
+  timestamp: number;
+  notes?: string;
+}
+
+// ── Batch with recall status ──────────────────────────────────────────────────
+
+export interface BatchWithRecall {
+  id: string;
+  name: string;
+  owner: string;
+  productIds: string[];
+  timestamp: number;
+  recalled: boolean;
+  recallReason: string;
+  recallTimestamp: number;
+}
+
+// ── Paginated response ────────────────────────────────────────────────────────
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
+// ── Delegation (#delegation) ──────────────────────────────────────────────────
+
+/** An actor delegation granting a delegatee authority to act on a product. */
+export interface Delegation {
+  delegationId: number;
+  productId: string;
+  delegator: string;
+  delegatee: string;
+  expiresAt: number;
+  revoked: boolean;
+  createdAt: number;
+}
+
+// ── Sustainability metadata ───────────────────────────────────────────────────
+
+/** Sustainability metrics associated with a product or event. */
+export interface SustainabilityMetadata {
+  /** Carbon footprint in kg CO2 equivalent */
+  carbon_footprint?: number;
+  /** Certification level: none | bronze | silver | gold | platinum */
+  certification_level?: string;
+  /** List of sustainable practices applied */
+  sustainable_practices?: string[];
+  /** Percentage of energy from renewable sources (0–100) */
+  renewable_energy_pct?: number;
+  /** Whether recyclable packaging is used */
+  recyclable_packaging?: boolean;
+  // Aliases kept for backwards compatibility
+  carbonFootprint?: number;
+  energySource?: string;
+  recyclable?: boolean;
+  certifications?: string[];
+  notes?: string;
+}
+
+// ── Webhook ───────────────────────────────────────────────────────────────────
+
+/** A registered webhook subscription. */
+export interface Webhook {
+  id: string;
+  url: string;
+  events: string[];
+  secret?: string;
+  active: boolean;
+  createdAt: number;
 }

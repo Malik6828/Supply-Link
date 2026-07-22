@@ -56,9 +56,10 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-function base64ToBytes(b64: string): Uint8Array {
+function base64ToBytes(b64: string): Uint8Array<ArrayBuffer> {
   const binary = atob(b64);
-  const bytes = new Uint8Array(binary.length);
+  const buf = new ArrayBuffer(binary.length);
+  const bytes = new Uint8Array(buf);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return bytes;
 }
@@ -98,9 +99,11 @@ export async function encryptMetadata(
   key: CryptoKey,
 ): Promise<MetadataEnvelope> {
   const crypto = webcrypto();
-  const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
+  const iv = crypto.getRandomValues(new Uint8Array(new ArrayBuffer(IV_BYTES)));
   const data = new TextEncoder().encode(plaintext);
-  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: ALG, iv }, key, data));
+  const ct = new Uint8Array(
+    (await crypto.subtle.encrypt({ name: ALG, iv }, key, data)) as ArrayBuffer,
+  );
   return {
     v: 1,
     alg: 'AES-GCM',
@@ -128,7 +131,10 @@ export async function decryptMetadata(envelope: MetadataEnvelope, key: CryptoKey
 export async function computeCommitment(envelope: MetadataEnvelope): Promise<string> {
   const canonical = `${envelope.v}.${envelope.alg}.${envelope.iv}.${envelope.ciphertext}`;
   const digest = new Uint8Array(
-    await webcrypto().subtle.digest('SHA-256', new TextEncoder().encode(canonical)),
+    (await webcrypto().subtle.digest(
+      'SHA-256',
+      new TextEncoder().encode(canonical),
+    )) as ArrayBuffer,
   );
   return bytesToHex(digest);
 }

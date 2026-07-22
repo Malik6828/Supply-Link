@@ -13,7 +13,7 @@
  *  - Sparse event coverage: missing expected lifecycle stages
  */
 
-import type { Product, TrackingEvent } from '@/lib/types';
+import type { Product, TrackingEvent, EventType } from '@/lib/types';
 
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
 
@@ -48,12 +48,12 @@ const STAGE_DELAY_THRESHOLDS: Record<string, Record<string, number>> = {
 
 /** Maximum realistic seconds between consecutive stages before flagging a delay. */
 const STAGE_MAX_GAP: Record<string, Record<string, number>> = {
-  HARVEST: { PROCESSING: 30 * 86_400 },   // 30 days
-  PROCESSING: { SHIPPING: 14 * 86_400 },  // 14 days
-  SHIPPING: { RETAIL: 21 * 86_400 },      // 21 days
+  HARVEST: { PROCESSING: 30 * 86_400 }, // 30 days
+  PROCESSING: { SHIPPING: 14 * 86_400 }, // 14 days
+  SHIPPING: { RETAIL: 21 * 86_400 }, // 21 days
 };
 
-const EXPECTED_STAGES = ['HARVEST', 'PROCESSING', 'SHIPPING', 'RETAIL'];
+const EXPECTED_STAGES: EventType[] = ['HARVEST', 'PROCESSING', 'SHIPPING', 'RETAIL'];
 
 // ── Scoring helpers ───────────────────────────────────────────────────────────
 
@@ -168,10 +168,7 @@ function scoreToLevel(score: number): RiskLevel {
  * Each factor is independently explainable so buyers and auditors can
  * understand exactly why a product is flagged.
  */
-export function computeRecallRiskScore(
-  product: Product,
-  events: TrackingEvent[],
-): RecallRiskScore {
+export function computeRecallRiskScore(product: Product, events: TrackingEvent[]): RecallRiskScore {
   const activeEvents = events.filter((e) => !e.archived);
 
   const candidates = [
@@ -184,7 +181,10 @@ export function computeRecallRiskScore(
   ];
 
   const factors = candidates.filter((f): f is RiskFactor => f !== null);
-  const score = Math.min(100, factors.reduce((sum, f) => sum + f.penalty, 0));
+  const score = Math.min(
+    100,
+    factors.reduce((sum, f) => sum + f.penalty, 0),
+  );
 
   return {
     productId: product.id,
@@ -198,19 +198,27 @@ export function computeRecallRiskScore(
 /** Tailwind color class for a risk level. */
 export function getRiskLevelColor(level: RiskLevel): string {
   switch (level) {
-    case 'critical': return 'text-red-600 dark:text-red-400';
-    case 'high':     return 'text-orange-600 dark:text-orange-400';
-    case 'medium':   return 'text-yellow-600 dark:text-yellow-400';
-    case 'low':      return 'text-green-600 dark:text-green-400';
+    case 'critical':
+      return 'text-red-600 dark:text-red-400';
+    case 'high':
+      return 'text-orange-600 dark:text-orange-400';
+    case 'medium':
+      return 'text-yellow-600 dark:text-yellow-400';
+    case 'low':
+      return 'text-green-600 dark:text-green-400';
   }
 }
 
 /** Tailwind background + border class for a risk level. */
 export function getRiskLevelBg(level: RiskLevel): string {
   switch (level) {
-    case 'critical': return 'bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800';
-    case 'high':     return 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-800';
-    case 'medium':   return 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950 dark:border-yellow-800';
-    case 'low':      return 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800';
+    case 'critical':
+      return 'bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800';
+    case 'high':
+      return 'bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-800';
+    case 'medium':
+      return 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950 dark:border-yellow-800';
+    case 'low':
+      return 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800';
   }
 }

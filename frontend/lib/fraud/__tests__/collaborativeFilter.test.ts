@@ -5,7 +5,7 @@ import type { ProductEventSummary } from '../collaborativeFilter';
 function buildProducts(
   defs: Array<{
     productId: string;
-    events: Array<{ event_type: string; timestamp: number; actor?: string }>;
+    events: Array<{ eventType: string; timestamp: number; actor?: string }>;
     isSuspicious?: boolean;
   }>,
 ): Map<string, ProductEventSummary> {
@@ -22,8 +22,8 @@ describe('detectCrossProductFraud', () => {
       {
         productId: 'p1',
         events: [
-          { event_type: 'HARVEST', timestamp: 0, actor: 'alice' },
-          { event_type: 'RETAIL', timestamp: 100000, actor: 'bob' },
+          { eventType: 'HARVEST', timestamp: 0, actor: 'alice' },
+          { eventType: 'RETAIL', timestamp: 100000, actor: 'bob' },
         ],
       },
     ]);
@@ -48,8 +48,8 @@ describe('detectCrossProductFraud', () => {
         productId: `p${i}`,
         isSuspicious: true,
         events: [
-          { event_type: 'HARVEST', timestamp: i * 1000, actor: sharedActor },
-          { event_type: 'RETAIL', timestamp: i * 1000 + 100, actor: sharedActor },
+          { eventType: 'HARVEST', timestamp: i * 1000, actor: sharedActor },
+          { eventType: 'RETAIL', timestamp: i * 1000 + 100, actor: sharedActor },
         ],
       })),
     );
@@ -66,10 +66,10 @@ describe('detectCrossProductFraud', () => {
         productId: 'p1',
         isSuspicious: true,
         events: [
-          { event_type: 'HARVEST', timestamp: 0, actor: omnipresent },
-          { event_type: 'PROCESSING', timestamp: 3600, actor: omnipresent },
-          { event_type: 'SHIPPING', timestamp: 7200, actor: omnipresent },
-          { event_type: 'RETAIL', timestamp: 100000, actor: omnipresent },
+          { eventType: 'HARVEST', timestamp: 0, actor: omnipresent },
+          { eventType: 'PROCESSING', timestamp: 3600, actor: omnipresent },
+          { eventType: 'SHIPPING', timestamp: 7200, actor: omnipresent },
+          { eventType: 'RETAIL', timestamp: 100000, actor: omnipresent },
         ],
       },
     ]);
@@ -87,7 +87,14 @@ describe('detectCrossProductFraud', () => {
         isSuspicious: i % 2 === 0,
         events: [
           {
-            event_type: i % 4 === 0 ? 'HARVEST' : i % 4 === 1 ? 'PROCESSING' : i % 4 === 2 ? 'SHIPPING' : 'RETAIL',
+            eventType:
+              i % 4 === 0
+                ? 'HARVEST'
+                : i % 4 === 1
+                  ? 'PROCESSING'
+                  : i % 4 === 2
+                    ? 'SHIPPING'
+                    : 'RETAIL',
             timestamp: i * 1000,
             actor: omnipresent,
           },
@@ -106,10 +113,10 @@ describe('detectCrossProductFraud', () => {
         productId: `p${i}`,
         isSuspicious: true,
         events: [
-          { event_type: 'HARVEST', timestamp: i * 10, actor: omnipresent },
-          { event_type: 'PROCESSING', timestamp: i * 10 + 5, actor: omnipresent },
-          { event_type: 'SHIPPING', timestamp: i * 10 + 8, actor: omnipresent },
-          { event_type: 'RETAIL', timestamp: i * 10 + 9, actor: omnipresent },
+          { eventType: 'HARVEST', timestamp: i * 10, actor: omnipresent },
+          { eventType: 'PROCESSING', timestamp: i * 10 + 5, actor: omnipresent },
+          { eventType: 'SHIPPING', timestamp: i * 10 + 8, actor: omnipresent },
+          { eventType: 'RETAIL', timestamp: i * 10 + 9, actor: omnipresent },
         ],
       })),
     );

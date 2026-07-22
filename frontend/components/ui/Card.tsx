@@ -1,5 +1,5 @@
-import { ReactNode } from "react";
-import { clsx } from "clsx";
+import { ReactNode } from 'react';
+import { clsx } from 'clsx';
 
 interface CardProps {
   children: ReactNode;
@@ -23,7 +23,9 @@ interface CardFooterProps {
 
 export function Card({ children, className }: CardProps) {
   return (
-    <div className={clsx("bg-[var(--card)] border border-[var(--card-border)] rounded-lg", className)}>
+    <div
+      className={clsx('bg-[var(--card)] border border-[var(--card-border)] rounded-lg', className)}
+    >
       {children}
     </div>
   );
@@ -31,24 +33,33 @@ export function Card({ children, className }: CardProps) {
 
 export function CardHeader({ children, className }: CardHeaderProps) {
   return (
-    <div className={clsx("px-6 py-4 border-b border-[var(--card-border)]", className)}>
+    <div className={clsx('px-6 py-4 border-b border-[var(--card-border)]', className)}>
       {children}
     </div>
   );
 }
 
 export function CardContent({ children, className }: CardContentProps) {
+  return <div className={clsx('px-6 py-4', className)}>{children}</div>;
+}
+
+export function CardFooter({ children, className }: CardFooterProps) {
   return (
-    <div className={clsx("px-6 py-4", className)}>
+    <div className={clsx('px-6 py-4 border-t border-[var(--card-border)] flex gap-3', className)}>
       {children}
     </div>
   );
 }
 
-export function CardFooter({ children, className }: CardFooterProps) {
+interface CardTitleProps {
+  children: ReactNode;
+  className?: string;
+}
+
+export function CardTitle({ children, className }: CardTitleProps) {
   return (
-    <div className={clsx("px-6 py-4 border-t border-[var(--card-border)] flex gap-3", className)}>
+    <h3 className={clsx('text-base font-semibold text-[var(--foreground)]', className)}>
       {children}
-    </div>
+    </h3>
   );
 }

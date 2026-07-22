@@ -5,6 +5,8 @@
  * across in-app, webhook, and email channels.
  */
 
+import { createCollection } from '@/lib/store';
+
 export type AlertSeverity = 'info' | 'warning' | 'high' | 'critical';
 export type AlertChannel = 'in-app' | 'webhook' | 'email';
 export type AlertStatus = 'active' | 'acknowledged' | 'resolved' | 'cancelled';
@@ -48,9 +50,9 @@ export interface AlertDeliveryEntry {
   error?: string;
 }
 
-// ── In-memory store (replace with DB / KV in production) ─────────────────────
+// ── Persistent store (shared KV repository) ───────────────────────────────────
 
-const alertStore = new Map<string, EmergencyAlert>();
+const alertStore = createCollection<EmergencyAlert>('emergency-alert');
 
 // ── Severity helpers ──────────────────────────────────────────────────────────
 
@@ -131,7 +133,7 @@ export function getAlert(id: string): EmergencyAlert | null {
 }
 
 export function listAlerts(productId?: string): EmergencyAlert[] {
-  const all = Array.from(alertStore.values());
+  const all = alertStore.all();
   return productId ? all.filter((a) => a.productId === productId) : all;
 }
 
@@ -139,10 +141,7 @@ export function listActiveAlerts(productId?: string): EmergencyAlert[] {
   return listAlerts(productId).filter((a) => a.status === 'active');
 }
 
-export function acknowledgeAlert(
-  id: string,
-  acknowledgedBy: string,
-): EmergencyAlert | null {
+export function acknowledgeAlert(id: string, acknowledgedBy: string): EmergencyAlert | null {
   const alert = alertStore.get(id);
   if (!alert || alert.status !== 'active') return null;
 
@@ -186,11 +185,7 @@ export function cancelAlert(id: string): EmergencyAlert | null {
   return alert;
 }
 
-export function markDelivered(
-  alertId: string,
-  recipient: string,
-  channel: AlertChannel,
-): void {
+export function markDelivered(alertId: string, recipient: string, channel: AlertChannel): void {
   const alert = alertStore.get(alertId);
   if (!alert) return;
 
@@ -229,7 +224,7 @@ export function getAlertStats(): {
   acknowledged: number;
   resolved: number;
 } {
-  const all = Array.from(alertStore.values());
+  const all = alertStore.all();
   return {
     total: all.length,
     active: all.filter((a) => a.status === 'active').length,

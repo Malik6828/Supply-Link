@@ -8,21 +8,31 @@ import { getWalletNetwork, isNetworkMatching } from '@/lib/stellar/network';
 import { getXlmBalance, formatBalance } from '@/lib/stellar/balance';
 import { accountUrl } from '@/lib/stellar/explorer';
 import { useStore } from '@/lib/state/store';
+import { useShallow } from 'zustand/react/shallow';
+import { useWalletAddress, useXlmBalance } from '@/lib/state/selectors/wallet';
 import { FreighterNotInstalledModal } from './FreighterNotInstalledModal';
 import { WalletRecoveryDialog } from './WalletRecoveryDialog';
 import { recordDependency, recordOperation } from '@/lib/api/metrics';
 
 export function WalletConnect() {
   const t = useTranslations('wallet');
+  const walletAddress = useWalletAddress();
+  const xlmBalance = useXlmBalance();
   const {
-    walletAddress,
     setWalletAddress,
-    xlmBalance,
     setXlmBalance,
     setNetworkMismatch,
     validateWalletConnection,
     disconnect,
-  } = useStore();
+  } = useStore(
+    useShallow((s) => ({
+      setWalletAddress: s.setWalletAddress,
+      setXlmBalance: s.setXlmBalance,
+      setNetworkMismatch: s.setNetworkMismatch,
+      validateWalletConnection: s.validateWalletConnection,
+      disconnect: s.disconnect,
+    })),
+  );
   const [loading, setLoading] = useState(false);
   const [showFreighterModal, setShowFreighterModal] = useState(false);
   const [showRecovery, setShowRecovery] = useState(false);

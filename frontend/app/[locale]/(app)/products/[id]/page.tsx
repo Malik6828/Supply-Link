@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getProductById, getEventsByProductId } from '@/lib/mock/products';
+import { getProductById, getEventsByProductId, getAllProducts } from '@/lib/mock/products';
 import {
   getAttestationsByProductId,
   getBatchesByProductId,
@@ -25,6 +25,8 @@ import { InsuranceCoveragePanel } from '@/components/products/InsuranceCoverageP
 import { getCategoryLabel, getSubcategoryLabel } from '@/lib/taxonomy';
 import { AnchorDocumentForm } from '@/components/products/AnchorDocumentForm';
 import { DocumentAnchorsPanel } from '@/components/products/DocumentAnchorsPanel';
+import { AssemblyPanel } from '@/components/products/AssemblyPanel';
+import { WarrantyPanel } from '@/components/products/WarrantyPanel';
 import { listActiveAlerts } from '@/lib/services/emergencyAlerts';
 
 interface Props {
@@ -261,7 +263,7 @@ export default function ProductDetailPage({ params }: Props) {
       {/* Product Actions */}
       <section>
         <h2 className="text-base font-semibold mb-4 text-[var(--foreground)]">Actions</h2>
-        <ProductActions productId={p.id} />
+        <ProductActions productId={p.id} productName={p.name} />
       </section>
     </main>
   );

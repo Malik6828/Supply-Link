@@ -1,29 +1,29 @@
-"use client";
+'use client';
 
 // Menu icon kept for potential future use
-import { usePathname } from "next/navigation";
-import Link from "next/link";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { WalletConnect } from "@/components/wallet/WalletConnect";
-import { NetworkMismatchBanner } from "@/components/wallet/NetworkMismatchBanner";
-import { LowBalanceWarning } from "@/components/wallet/LowBalanceWarning";
-import { NetworkBadge } from "@/components/NetworkBadge";
-import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
-import { useNotifications } from "@/lib/hooks/useNotifications";
-import { useStore } from "@/lib/state/store";
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { WalletConnect } from '@/components/wallet/WalletConnect';
+import { NetworkMismatchBanner } from '@/components/wallet/NetworkMismatchBanner';
+import { LowBalanceWarning } from '@/components/wallet/LowBalanceWarning';
+import { NetworkBadge } from '@/components/NetworkBadge';
+import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
+import { useNotifications } from '@/lib/hooks/useNotifications';
+import { useXlmBalance } from '@/lib/state/selectors/wallet';
 
 const PAGE_TITLES: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/products": "Products",
-  "/tracking": "Tracking",
+  '/dashboard': 'Dashboard',
+  '/products': 'Products',
+  '/tracking': 'Tracking',
 };
 
 function getPageTitle(pathname: string): string {
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
   for (const [key, title] of Object.entries(PAGE_TITLES)) {
-    if (pathname.startsWith(key + "/")) return title;
+    if (pathname.startsWith(key + '/')) return title;
   }
-  return "Supply-Link";
+  return 'Supply-Link';
 }
 
 interface AppNavbarProps {
@@ -33,7 +33,7 @@ interface AppNavbarProps {
 export function AppNavbar({ onMenuClick }: AppNavbarProps) {
   const pathname = usePathname();
   const title = getPageTitle(pathname);
-  const { xlmBalance } = useStore();
+  const xlmBalance = useXlmBalance();
   const { notifications, unreadCount, markNotificationRead, markAllNotificationsRead } =
     useNotifications();
 
@@ -51,7 +51,9 @@ export function AppNavbar({ onMenuClick }: AppNavbarProps) {
         {/* Page title — mobile only */}
         <span className="text-sm font-semibold text-[var(--foreground)] md:hidden">{title}</span>
         {/* Spacer on desktop */}
-        <span className="hidden md:inline text-sm font-medium text-[var(--foreground)] md:ml-2">{title}</span>
+        <span className="hidden md:inline text-sm font-medium text-[var(--foreground)] md:ml-2">
+          {title}
+        </span>
 
         <div className="ml-auto flex items-center gap-2">
           <NetworkBadge />
