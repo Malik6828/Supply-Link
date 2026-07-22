@@ -117,6 +117,9 @@ function CoverageCard({ coverage, productId, onClaimAdded }: CoverageCardProps) 
 
   return (
     <div
+      data-testid="coverage-card"
+      data-coverage-id={coverage.id}
+      data-coverage-status={coverage.status}
       className={`rounded-lg border p-4 ${
         expired
           ? 'border-[var(--card-border)] opacity-70 bg-[var(--muted-bg)]'
@@ -131,7 +134,7 @@ function CoverageCard({ coverage, productId, onClaimAdded }: CoverageCardProps) 
             aria-hidden="true"
           />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-[var(--foreground)] truncate">
+            <p className="text-sm font-semibold text-[var(--foreground)] truncate" data-testid="coverage-provider">
               {coverage.provider}
             </p>
             <p className="text-xs text-[var(--muted)] mt-0.5">
@@ -148,6 +151,7 @@ function CoverageCard({ coverage, productId, onClaimAdded }: CoverageCardProps) 
 
         <div className="flex items-center gap-2 shrink-0">
           <span
+            data-testid="coverage-status-badge"
             className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${COVERAGE_STATUS_BADGE[coverage.status]}`}
           >
             {coverage.status.charAt(0).toUpperCase() + coverage.status.slice(1)}
@@ -157,6 +161,7 @@ function CoverageCard({ coverage, productId, onClaimAdded }: CoverageCardProps) 
             onClick={() => setExpanded((v) => !v)}
             className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
             aria-label={expanded ? 'Collapse' : 'Expand'}
+            data-testid="coverage-expand-btn"
           >
             {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
@@ -194,15 +199,16 @@ function CoverageCard({ coverage, productId, onClaimAdded }: CoverageCardProps) 
               type="button"
               onClick={() => setShowClaimForm(true)}
               className="flex items-center gap-1.5 text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+              data-testid="add-claim-btn"
             >
               <Plus size={12} />
               Add claim proof
             </button>
           ) : (
-            <form onSubmit={handleAddClaim} className="space-y-2">
+            <form onSubmit={handleAddClaim} className="space-y-2" data-testid="claim-form">
               <p className="text-xs font-semibold text-[var(--foreground)]">New claim proof</p>
               {claimError && (
-                <p className="text-xs text-red-600 dark:text-red-400">{claimError}</p>
+                <p className="text-xs text-red-600 dark:text-red-400" data-testid="claim-error">{claimError}</p>
               )}
               <input
                 type="text"
@@ -211,6 +217,7 @@ function CoverageCard({ coverage, productId, onClaimAdded }: CoverageCardProps) 
                 placeholder="Claim description"
                 className="w-full text-xs rounded border border-[var(--card-border)] bg-[var(--background)] px-2 py-1.5 text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
                 required
+                data-testid="claim-description-input"
               />
               <input
                 type="text"
@@ -219,6 +226,7 @@ function CoverageCard({ coverage, productId, onClaimAdded }: CoverageCardProps) 
                 placeholder="Proof reference (IPFS CID, URL, etc.)"
                 className="w-full text-xs rounded border border-[var(--card-border)] bg-[var(--background)] px-2 py-1.5 text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
                 required
+                data-testid="claim-proof-ref-input"
               />
               <input
                 type="text"
@@ -227,12 +235,14 @@ function CoverageCard({ coverage, productId, onClaimAdded }: CoverageCardProps) 
                 placeholder="Claimant address (G...)"
                 className="w-full text-xs rounded border border-[var(--card-border)] bg-[var(--background)] px-2 py-1.5 text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
                 required
+                data-testid="claim-claimant-input"
               />
               <div className="flex gap-2">
                 <button
                   type="submit"
                   disabled={submitting}
                   className="text-xs font-semibold px-3 py-1.5 rounded bg-[var(--primary)] text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                  data-testid="claim-submit-btn"
                 >
                   {submitting ? 'Submitting…' : 'Submit claim'}
                 </button>
@@ -303,10 +313,10 @@ function AddCoverageForm({ productId, onAdded, onCancel }: AddCoverageFormProps)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 pt-3 border-t border-[var(--card-border)]">
+    <form onSubmit={handleSubmit} className="space-y-3 pt-3 border-t border-[var(--card-border)]" data-testid="add-coverage-form">
       <p className="text-xs font-semibold text-[var(--foreground)]">Add insurance coverage</p>
       {error && (
-        <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
+        <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400" data-testid="add-coverage-error">
           <AlertCircle size={12} />
           {error}
         </div>
@@ -351,6 +361,7 @@ function AddCoverageForm({ productId, onAdded, onCancel }: AddCoverageFormProps)
           type="submit"
           disabled={submitting}
           className="text-xs font-semibold px-3 py-1.5 rounded bg-[var(--primary)] text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+          data-testid="add-coverage-submit-btn"
         >
           {submitting ? 'Adding…' : 'Add coverage'}
         </button>
@@ -404,7 +415,7 @@ export function InsuranceCoveragePanel({ productId, canAdd = false }: InsuranceC
   const verification = verifyCoverage(productId);
 
   return (
-    <section aria-label="Insurance coverage">
+    <section aria-label="Insurance coverage" data-testid="insurance-coverage-panel">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           {verification.covered ? (
@@ -416,7 +427,7 @@ export function InsuranceCoveragePanel({ productId, canAdd = false }: InsuranceC
             Insurance Coverage
           </h3>
           {verification.covered && (
-            <span className="text-xs text-green-700 dark:text-green-400 font-medium">
+            <span className="text-xs text-green-700 dark:text-green-400 font-medium" data-testid="insurance-total-coverage">
               · {formatCoverageAmount(verification.totalCoverageAmount, verification.currency)} covered
             </span>
           )}
@@ -427,24 +438,25 @@ export function InsuranceCoveragePanel({ productId, canAdd = false }: InsuranceC
           disabled={loading}
           className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors disabled:opacity-40"
           aria-label="Refresh coverage"
+          data-testid="insurance-refresh-btn"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 mb-4">
+        <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 mb-4" data-testid="insurance-error">
           <AlertCircle size={14} />
           {error}
         </div>
       )}
 
       {!loading && coverages.length === 0 && (
-        <p className="text-sm text-[var(--muted)]">No insurance coverage registered for this product.</p>
+        <p className="text-sm text-[var(--muted)]" data-testid="insurance-empty">No insurance coverage registered for this product.</p>
       )}
 
       {coverages.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-3" data-testid="insurance-coverage-list">
           {coverages.map((coverage) => (
             <CoverageCard
               key={coverage.id}
@@ -461,6 +473,7 @@ export function InsuranceCoveragePanel({ productId, canAdd = false }: InsuranceC
           type="button"
           onClick={() => setShowAddForm(true)}
           className="mt-3 flex items-center gap-1.5 text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+          data-testid="insurance-add-coverage-btn"
         >
           <Plus size={12} />
           Add insurance coverage

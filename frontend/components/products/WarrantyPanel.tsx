@@ -287,7 +287,7 @@ function FileClaimForm({ productId, onSuccess, onCancel }: FileClaimFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3">
+    <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3" data-testid="file-claim-form">
       <div className="flex flex-col gap-1">
         <label htmlFor="claim-description" className="text-xs font-medium">
           Issue description
@@ -382,7 +382,7 @@ function ClaimsList({ claims, productId, isOwner, onStatusUpdate }: ClaimsListPr
   }
 
   return (
-    <ul className="space-y-3" aria-label="Warranty claims">
+    <ul className="space-y-3" aria-label="Warranty claims" data-testid="warranty-claims-list">
       {claims.map((claim) => {
         const cfg = STATUS_CONFIG[claim.status];
         return (
@@ -400,7 +400,7 @@ function ClaimsList({ claims, productId, isOwner, onStatusUpdate }: ClaimsListPr
                 {cfg.label}
               </span>
             </div>
-            <p className="text-[var(--foreground)] mb-1">{claim.description}</p>
+            <p className="text-[var(--foreground)] mb-1" data-testid="warranty-claim-description">{claim.description}</p>
             {claim.proofRef && (
               <a
                 href={claim.proofRef}
@@ -415,7 +415,7 @@ function ClaimsList({ claims, productId, isOwner, onStatusUpdate }: ClaimsListPr
               Filed {fmtDate(claim.filedAt)} · Updated {fmtDate(claim.updatedAt)}
             </p>
             {isOwner && claim.status === 'Pending' && (
-              <div className="flex gap-2 mt-2">
+              <div className="flex gap-2 mt-2" data-testid="claim-action-buttons">
                 {(['Approved', 'Rejected', 'Resolved'] as ClaimStatus[]).map((s) => (
                   <button
                     key={s}
@@ -481,7 +481,7 @@ export function WarrantyPanel({
   }
 
   return (
-    <div>
+    <div data-testid="warranty-panel">
       {/* Header */}
       <button
         type="button"
@@ -575,7 +575,7 @@ export function WarrantyPanel({
               )}
 
               {/* Claims section */}
-              <div>
+              <div data-testid="warranty-claims-section">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-xs font-semibold text-[var(--foreground)] uppercase tracking-wide">
                     Claims ({claims.length})
