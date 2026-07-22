@@ -39,8 +39,10 @@ export function validateMetadata(raw: string): {
  * Works in browsers and Node ≥18.
  */
 export async function computeContentHash(data: ArrayBuffer | Uint8Array): Promise<string> {
-  const buffer = data instanceof Uint8Array ? data.buffer : data;
-  const digest = new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', buffer));
+  const buffer: ArrayBuffer = data instanceof Uint8Array ? (data.buffer as ArrayBuffer) : data;
+  const digest = new Uint8Array(
+    (await globalThis.crypto.subtle.digest('SHA-256', buffer)) as ArrayBuffer,
+  );
   return Array.from(digest)
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');

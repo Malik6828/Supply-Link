@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Package, ChevronDown, ChevronUp, GitBranch, Plus, X, Loader2 } from 'lucide-react';
 import type { ProductAssembly, Product } from '@/lib/types';
 import { registerAssembly } from '@/lib/stellar/client';
-import { useStore } from '@/lib/state/store';
+import { useWalletAddress } from '@/lib/state/selectors/wallet';
 import { useToast } from '@/lib/hooks/useToast';
 
 interface Props {
@@ -36,7 +36,11 @@ function fmtDate(ts: number) {
 
 function ComponentRow({ componentId }: { componentId: string }) {
   return (
-    <li className="flex items-center gap-3 py-2 border-b border-[var(--card-border)] last:border-0">
+    <li
+      className="flex items-center gap-3 py-2 border-b border-[var(--card-border)] last:border-0"
+      data-testid="assembly-component-row"
+      data-component-id={componentId}
+    >
       <span className="flex-shrink-0 w-7 h-7 rounded-lg bg-violet-500/10 flex items-center justify-center">
         <Package size={14} className="text-violet-500" aria-hidden />
       </span>
@@ -67,7 +71,7 @@ interface RegisterFormProps {
 }
 
 function RegisterAssemblyForm({ productId, allProducts, onSuccess, onCancel }: RegisterFormProps) {
-  const { walletAddress } = useStore();
+  const walletAddress = useWalletAddress();
   const toast = useToast();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [description, setDescription] = useState('');
@@ -76,9 +80,7 @@ function RegisterAssemblyForm({ productId, allProducts, onSuccess, onCancel }: R
   const eligible = allProducts.filter((p) => p.id !== productId);
 
   function toggleComponent(id: string) {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -146,9 +148,11 @@ function RegisterAssemblyForm({ productId, allProducts, onSuccess, onCancel }: R
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="assembly-description" className="text-xs font-medium text-[var(--foreground)]">
-          Description{' '}
-          <span className="text-[var(--muted)] font-normal">(optional)</span>
+        <label
+          htmlFor="assembly-description"
+          className="text-xs font-medium text-[var(--foreground)]"
+        >
+          Description <span className="text-[var(--muted)] font-normal">(optional)</span>
         </label>
         <textarea
           id="assembly-description"
@@ -191,7 +195,12 @@ function RegisterAssemblyForm({ productId, allProducts, onSuccess, onCancel }: R
 
 // ── Main panel ────────────────────────────────────────────────────────────────
 
-export function AssemblyPanel({ productId, assembly: initialAssembly, allProducts = [], isOwner = false }: Props) {
+export function AssemblyPanel({
+  productId,
+  assembly: initialAssembly,
+  allProducts = [],
+  isOwner = false,
+}: Props) {
   const [assembly, setAssembly] = useState<ProductAssembly | undefined>(initialAssembly);
   const [expanded, setExpanded] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -199,22 +208,22 @@ export function AssemblyPanel({ productId, assembly: initialAssembly, allProduct
   const hasAssembly = assembly && assembly.componentIds.length > 0;
 
   return (
-    <div>
+    <div data-testid="assembly-panel">
       {/* Header */}
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
         className="flex items-center justify-between w-full text-left group"
         aria-expanded={expanded}
+        data-testid="assembly-panel-toggle"
       >
         <div className="flex items-center gap-2">
           <GitBranch size={16} className="text-violet-500" aria-hidden />
-          <span className="text-sm font-medium text-[var(--foreground)]">
-            Assembly Structure
-          </span>
+          <span className="text-sm font-medium text-[var(--foreground)]">Assembly Structure</span>
           {hasAssembly && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-500 font-medium">
-              {assembly.componentIds.length} component{assembly.componentIds.length !== 1 ? 's' : ''}
+              {assembly.componentIds.length} component
+              {assembly.componentIds.length !== 1 ? 's' : ''}
             </span>
           )}
         </div>
@@ -243,7 +252,11 @@ export function AssemblyPanel({ productId, assembly: initialAssembly, allProduct
               </div>
 
               {/* Component list */}
-              <ul className="mb-3" aria-label="Component products">
+              <ul
+                className="mb-3"
+                aria-label="Component products"
+                data-testid="assembly-component-list"
+              >
                 {assembly.componentIds.map((id) => (
                   <ComponentRow key={id} componentId={id} />
                 ))}

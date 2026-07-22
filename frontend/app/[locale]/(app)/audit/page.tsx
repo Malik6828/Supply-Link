@@ -4,7 +4,8 @@ import { redirect } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import { ShieldCheck, Package, Activity, Clock, Search } from 'lucide-react';
 import { useDashboardData } from '@/lib/hooks/useDashboardData';
-import { useStore } from '@/lib/state/store';
+import { useProductsList } from '@/lib/state/selectors/products';
+import { useEventsList } from '@/lib/state/selectors/events';
 import { EventTimeline } from '@/components/tracking/EventTimeline';
 import { useState } from 'react';
 import type { TrackingEvent } from '@/lib/types';
@@ -22,10 +23,10 @@ export default function AuditPage() {
     from: Date.now() - 90 * 86_400_000,
     to: Date.now(),
   });
-  const products = useStore((s) => s.products);
+  const products = useProductsList();
   const [search, setSearch] = useState('');
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  const events = useStore((s) => s.events);
+  const events = useEventsList();
 
   const filteredProducts = products.filter(
     (p) =>

@@ -153,7 +153,13 @@ export type OperationName =
   | 'qr.scan'
   | 'export.csv'
   | 'export.json'
-  | 'webhook.deliver';
+  | 'webhook.deliver'
+  | 'document.anchor'
+  | 'snapshot.create'
+  | 'guardian.propose_handover'
+  | 'guardian.accept_handover'
+  | 'guardian.cancel_handover'
+  | 'guardian.rotate_key';
 
 const operationCounters = new Map<string, { success: number; failure: number }>();
 

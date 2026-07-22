@@ -7,7 +7,11 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Search, Plus, Package, ChevronDown, Upload, RefreshCw, Download } from 'lucide-react';
 import { exportToCSV, exportToJSON } from '@/lib/utils/export';
 import * as Select from '@radix-ui/react-select';
-import { useStore, useFilteredProducts } from '@/lib/state/store';
+import { useStore } from '@/lib/state/store';
+import { useFilteredProducts } from '@/lib/state/selectors/products';
+import { useEventsList } from '@/lib/state/selectors/events';
+import { useProductFilters, useCompareIds } from '@/lib/state/selectors/ui';
+import { useShallow } from 'zustand/react/shallow';
 import { usePaginatedList } from '@/lib/hooks/usePaginatedList';
 import { Pagination } from '@/components/ui/Pagination';
 import { useProducts } from '@/lib/hooks/useProducts';
@@ -17,6 +21,7 @@ import { CompareBar } from '@/components/products/CompareBar';
 import ProductQRCode from '@/components/products/ProductQRCode';
 import type { EventType } from '@/lib/types';
 import { EVENT_TYPE_CONFIG } from '@/lib/eventTypeConfig';
+import { PRODUCT_TAXONOMY } from '@/lib/taxonomy';
 
 const EVENT_TYPES: EventType[] = ['HARVEST', 'PROCESSING', 'SHIPPING', 'RETAIL'];
 
@@ -59,24 +64,23 @@ function EmptyState({ hasSearch, onRegister }: { hasSearch: boolean; onRegister:
 
 export default function ProductsPage() {
   const { loading, error, refresh } = useProducts();
-  const {
-    searchQuery,
-    filterEventType,
-    sortBy,
-    sortOrder,
-    compareIds,
-    toggleCompare,
-    setSearchQuery,
-    setFilterEventType,
-    setSortBy,
-    setSortOrder,
-  } = useStore();
+  const { searchQuery, filterEventType, sortBy, sortOrder } = useProductFilters();
+  const compareIds = useCompareIds();
+  const { toggleCompare, setSearchQuery, setFilterEventType, setSortBy, setSortOrder } = useStore(
+    useShallow((s) => ({
+      toggleCompare: s.toggleCompare,
+      setSearchQuery: s.setSearchQuery,
+      setFilterEventType: s.setFilterEventType,
+      setSortBy: s.setSortBy,
+      setSortOrder: s.setSortOrder,
+    })),
+  );
   const filtered = useFilteredProducts();
   const { pageItems, page, pageSize, total, goToPage, changePageSize } = usePaginatedList(
     filtered,
     20,
   );
-  const events = useStore((s) => s.events);
+  const events = useEventsList();
 
   const [registerOpen, setRegisterOpen] = useState(false);
   const [batchOpen, setBatchOpen] = useState(false);

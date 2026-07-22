@@ -1,48 +1,72 @@
-import { NextRequest, NextResponse } from "next/server";
-import { notifyWebhooksOfEvent } from "@/lib/webhooks/processor";
-import type { TrackingEvent } from "@/lib/types";
+import { NextRequest, NextResponse } from 'next/server';
+import { notifyWebhooksOfEvent, retryFailedDeliveries } from '@/lib/webhooks/processor';
+import { claimOnce } from '@/lib/webhooks/storage';
+import {
+  WEBHOOK_EVENT_DEDUPE_TTL_SECONDS,
+  WEBHOOK_PROCESS_LOCK_TTL_SECONDS,
+} from '@/lib/webhooks/config';
+import type { TrackingEvent } from '@/lib/types';
+
+const TICK_LOCK_KEY = 'webhook:process:tick:lock';
 
 /**
  * POST /api/v1/webhooks/process/pending
  *
- * This endpoint is called when new tracking events are detected.
- * In a production system, this would be triggered by:
- * - A polling service that checks the blockchain for new events
- * - A webhook from the blockchain when events occur
- * - A scheduled cron job that processes pending events
+ * The webhook processing tick. Two independent, idempotent jobs run per call:
  *
- * Request body: { event: TrackingEvent }
+ * 1. If an `event` is supplied, broadcast it — deduped so repeated calls for
+ *    the same event (client retries, duplicate triggers) don't double-deliver.
+ * 2. Always process any due delivery retries from the pending queue, guarded
+ *    by a short-lived lock so overlapping/concurrent invocations of this tick
+ *    don't process the same retry batch twice.
+ *
+ * This endpoint is safe to call repeatedly and concurrently — by a polling
+ * service, a blockchain-triggered webhook, or a scheduled cron job.
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const event = body.event as TrackingEvent;
+    const body = await request.json().catch(() => ({}) as Record<string, unknown>);
+    const event = body?.event as TrackingEvent | undefined;
 
-    // Validate event structure
-    if (!event || !event.productId || !event.eventType) {
-      return NextResponse.json(
-        { error: "Invalid event structure" },
-        { status: 400 }
-      );
+    let eventResult = {
+      delivered: true,
+      successCount: 0,
+      failureCount: 0,
+      failedWebhookIds: [] as string[],
+    };
+
+    if (event) {
+      if (!event.productId || !event.eventType) {
+        return NextResponse.json({ error: 'Invalid event structure' }, { status: 400 });
+      }
+
+      // Idempotency: dedupe repeated deliveries of the same tracking event.
+      const dedupeKey = `webhook:event:seen:${event.productId}:${event.eventType}:${event.timestamp}`;
+      const isNewEvent = await claimOnce(dedupeKey, WEBHOOK_EVENT_DEDUPE_TTL_SECONDS);
+      if (isNewEvent) {
+        eventResult = await notifyWebhooksOfEvent(event);
+      }
     }
 
-    // Notify webhooks
-    const result = await notifyWebhooksOfEvent(event);
+    // Process due retries. The lock ensures at most one concurrent tick drains
+    // the pending queue; a tick that misses the lock still completes the
+    // `event` broadcast above.
+    const acquiredTickLock = await claimOnce(TICK_LOCK_KEY, WEBHOOK_PROCESS_LOCK_TTL_SECONDS);
+    if (acquiredTickLock) {
+      await retryFailedDeliveries();
+    }
 
     return NextResponse.json(
       {
-        success: result.delivered,
-        successCount: result.successCount,
-        failureCount: result.failureCount,
-        failedWebhookIds: result.failedWebhookIds,
+        success: eventResult.delivered,
+        successCount: eventResult.successCount,
+        failureCount: eventResult.failureCount,
+        failedWebhookIds: eventResult.failedWebhookIds,
       },
-      { status: result.delivered ? 200 : 500 }
+      { status: eventResult.delivered ? 200 : 500 },
     );
   } catch (err) {
-    console.error("Failed to process webhooks:", err);
-    return NextResponse.json(
-      { error: "Failed to process webhooks" },
-      { status: 500 }
-    );
+    console.error('Failed to process webhooks:', err);
+    return NextResponse.json({ error: 'Failed to process webhooks' }, { status: 500 });
   }
 }

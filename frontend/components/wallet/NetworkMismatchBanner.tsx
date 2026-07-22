@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { AlertCircle } from "lucide-react";
-import { useStore } from "@/lib/state/store";
+import { AlertCircle } from 'lucide-react';
+import { useNetworkMismatch } from '@/lib/state/selectors/wallet';
 
 export function NetworkMismatchBanner() {
-  const { networkMismatch } = useStore();
+  const networkMismatch = useNetworkMismatch();
 
   if (!networkMismatch) return null;
 
@@ -13,12 +13,10 @@ export function NetworkMismatchBanner() {
       <div className="flex gap-3">
         <AlertCircle className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" size={20} />
         <div className="flex-1">
-          <h3 className="font-semibold text-red-900 dark:text-red-100 mb-1">
-            Network Mismatch
-          </h3>
+          <h3 className="font-semibold text-red-900 dark:text-red-100 mb-1">Network Mismatch</h3>
           <p className="text-sm text-red-800 dark:text-red-200 mb-3">
-            Your Freighter wallet is connected to a different network than this application.
-            Please switch your wallet to the correct network to proceed.
+            Your Freighter wallet is connected to a different network than this application. Please
+            switch your wallet to the correct network to proceed.
           </p>
           <p className="text-xs text-red-700 dark:text-red-300">
             <strong>To fix:</strong> Open Freighter, click the network selector, and choose the

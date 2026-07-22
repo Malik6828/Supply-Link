@@ -1,5 +1,16 @@
 import type { Product, TrackingEvent, EventType, Notification } from '@/lib/types';
 
+/**
+ * Discriminated union for in-flight fetch state. Replaces the old
+ * `{ loading: boolean; error: string | null }` pair, which allowed invalid
+ * combinations (e.g. loading === true while error was also set).
+ */
+export type AsyncStatus =
+  | { state: 'idle' }
+  | { state: 'loading' }
+  | { state: 'success' }
+  | { state: 'error'; message: string };
+
 export interface OnboardingChecklistItem {
   id: string;
   title: string;
@@ -30,17 +41,18 @@ export interface WalletSlice {
 }
 
 export interface ProductsSlice {
-  products: Product[];
-  productsLoading: boolean;
-  productsError: string | null;
+  /** Normalized product storage — id -> Product, for O(1) lookups/updates. */
+  productsById: Record<string, Product>;
+  /** Insertion order of product ids, since object key order isn't a display contract. */
+  productOrder: string[];
+  productsStatus: AsyncStatus;
   productsLastFetched: number | null;
   productPage: number;
   productPageSize: number;
   productTotal: number;
   setProducts: (products: Product[]) => void;
   addProduct: (product: Product) => void;
-  setProductsLoading: (v: boolean) => void;
-  setProductsError: (v: string | null) => void;
+  setProductsStatus: (status: AsyncStatus) => void;
   setProductsLastFetched: (ts: number | null) => void;
   updateProductOwner: (productId: string, newOwner: string) => void;
   addOptimisticProduct: (product: Product) => void;
@@ -52,9 +64,11 @@ export interface ProductsSlice {
 }
 
 export interface EventsSlice {
-  events: TrackingEvent[];
-  eventsLoading: boolean;
-  eventsError: string | null;
+  /** Normalized event storage — `${productId}__${timestamp}` -> TrackingEvent. */
+  eventsById: Record<string, TrackingEvent>;
+  /** Insertion order of event keys, since object key order isn't a display contract. */
+  eventOrder: string[];
+  eventsStatus: AsyncStatus;
   eventsLastFetched: number | null;
   eventPage: number;
   eventPageSize: number;
@@ -62,8 +76,7 @@ export interface EventsSlice {
   selectedProductId: string | null;
   setEvents: (events: TrackingEvent[]) => void;
   addEvent: (event: TrackingEvent) => void;
-  setEventsLoading: (v: boolean) => void;
-  setEventsError: (v: string | null) => void;
+  setEventsStatus: (status: AsyncStatus) => void;
   setEventsLastFetched: (ts: number | null) => void;
   addOptimisticEvent: (event: TrackingEvent) => void;
   confirmOptimisticEvent: (productId: string, timestamp: number) => void;

@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import type { OnboardingSlice, OnboardingChecklistItem } from './types';
+import type { SupplyLinkStore, OnboardingSlice, OnboardingChecklistItem } from './types';
 
 const DEFAULT_CHECKLIST: OnboardingChecklistItem[] = [
   {
@@ -46,7 +46,9 @@ const DEFAULT_CHECKLIST: OnboardingChecklistItem[] = [
   },
 ];
 
-export const createOnboardingSlice: StateCreator<OnboardingSlice> = (set) => ({
+export const createOnboardingSlice: StateCreator<SupplyLinkStore, [], [], OnboardingSlice> = (
+  set,
+) => ({
   onboardingCompleted: false,
   onboardingChecklist: DEFAULT_CHECKLIST,
   onboardingProgress: 0,

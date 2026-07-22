@@ -2,11 +2,11 @@ import type { TrackingEvent } from '@/lib/types';
 import { recordOperation } from '@/lib/api/metrics';
 
 const CSV_HEADERS = [
-  'product_id',
-  'event_type',
+  'productId',
   'location',
   'actor',
   'timestamp',
+  'eventType',
   'metadata',
 ] as const;
 
@@ -20,20 +20,24 @@ function downloadBlob(content: string, filename: string, mime: string) {
   URL.revokeObjectURL(url);
 }
 
-export function exportToCSV(events: TrackingEvent[], filename = 'events.csv') {
-  if (events.length === 0) return;
+export function exportToCSV(events: TrackingEvent[], filename = 'events.csv'): string {
+  if (events.length === 0) return '';
   const rows = events.map((e) =>
-    [e.productId, e.eventType, e.location, e.actor, e.timestamp, e.metadata]
+    [e.productId, e.location, e.actor, e.timestamp, e.eventType, e.metadata]
       .map((v) => JSON.stringify(String(v ?? '')))
       .join(','),
   );
-  downloadBlob([CSV_HEADERS.join(','), ...rows].join('\n'), filename, 'text/csv');
+  const csv = [CSV_HEADERS.join(','), ...rows].join('\n');
+  downloadBlob(csv, filename, 'text/csv');
   recordOperation('export.csv', 'success');
+  return csv;
 }
 
-export function exportToJSON(events: TrackingEvent[], filename = 'events.json') {
-  downloadBlob(JSON.stringify(events, null, 2), filename, 'application/json');
+export function exportToJSON(events: TrackingEvent[], filename = 'events.json'): string {
+  const json = JSON.stringify(events, null, 2);
+  downloadBlob(json, filename, 'application/json');
   recordOperation('export.json', 'success');
+  return json;
 }
 
 export function downloadCSV(csv: string, filename: string): void {

@@ -5,14 +5,8 @@
  */
 
 import { detectSpeedAnomalies, type AnomalyDetectionResult } from './speedAnomalyDetector';
-import {
-  detectLocationAnomalies,
-  type LocationAnomalyResult,
-} from './locationAnomalyDetector';
-import {
-  detectSuspiciousPatterns,
-  type PatternDetectionResult,
-} from './patternDetector';
+import { detectLocationAnomalies, type LocationAnomalyResult } from './locationAnomalyDetector';
+import { detectSuspiciousPatterns, type PatternDetectionResult } from './patternDetector';
 import { scoreFraud, type FraudScoringResult } from './mlFraudScorer';
 import {
   detectCrossProductFraud,
@@ -22,7 +16,7 @@ import {
 import { AlertSystem, defaultAlertSystem, type AlertThresholds } from './alertSystem';
 
 export interface ProductEvent {
-  event_type: string;
+  eventType: string;
   timestamp: number;
   actor?: string;
   location?: string;
@@ -109,7 +103,10 @@ export class FraudDetectionEngine {
       : this.emptySpeedResult(productId, events.length);
 
     const locationResult = enableLocationDetection
-      ? detectLocationAnomalies(productId, events)
+      ? detectLocationAnomalies(
+          productId,
+          events.filter((e): e is typeof e & { location: string } => !!e.location),
+        )
       : this.emptyLocationResult(productId, events.length);
 
     const patternResult = enablePatternDetection
@@ -192,9 +189,7 @@ export class FraudDetectionEngine {
     };
   }
 
-  analyzeNetwork(
-    allProductEvents: Map<string, ProductEvent[]>,
-  ): NetworkAnalysisResult {
+  analyzeNetwork(allProductEvents: Map<string, ProductEvent[]>): NetworkAnalysisResult {
     const productResults = new Map<string, ComprehensiveFraudResult>();
 
     for (const [productId, events] of allProductEvents) {
@@ -216,7 +211,8 @@ export class FraudDetectionEngine {
         const result = productResults.get(productId)!;
         summaries.set(productId, {
           events,
-          isSuspicious: result.overallRiskLevel === 'high' || result.overallRiskLevel === 'critical',
+          isSuspicious:
+            result.overallRiskLevel === 'high' || result.overallRiskLevel === 'critical',
         });
       }
       collaborativeFilterResult = detectCrossProductFraud(summaries);

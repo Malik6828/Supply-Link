@@ -8,7 +8,7 @@
 
 // ── Configuration matrix ──────────────────────────────────────────────────────
 
-export type NetworkEnv = "testnet" | "mainnet";
+export type NetworkEnv = 'testnet' | 'mainnet';
 
 interface NetworkMatrix {
   passphrase: string;
@@ -20,13 +20,13 @@ interface NetworkMatrix {
 
 export const NETWORK_MATRIX: Record<NetworkEnv, NetworkMatrix> = {
   testnet: {
-    passphrase: "Test SDF Network ; September 2015",
-    rpcHostnames: ["soroban-testnet.stellar.org"],
+    passphrase: 'Test SDF Network ; September 2015',
+    rpcHostnames: ['soroban-testnet.stellar.org'],
     contractIdPattern: /^C[A-Z2-7]{55}$/,
   },
   mainnet: {
-    passphrase: "Public Global Stellar Network ; September 2015",
-    rpcHostnames: ["soroban-mainnet.stellar.org"],
+    passphrase: 'Public Global Stellar Network ; September 2015',
+    rpcHostnames: ['soroban-mainnet.stellar.org'],
     contractIdPattern: /^C[A-Z2-7]{55}$/,
   },
 };
@@ -48,26 +48,28 @@ export interface ConfigCheckResult {
 
 // ── Core validator ────────────────────────────────────────────────────────────
 
-export function checkNetworkConfig(env: NodeJS.ProcessEnv = process.env): ConfigCheckResult {
+export function checkNetworkConfig(
+  env: Record<string, string | undefined> = process.env,
+): ConfigCheckResult {
   const drifts: string[] = [];
 
   const network = env.NEXT_PUBLIC_STELLAR_NETWORK as NetworkEnv | undefined;
-  const contractId = env.NEXT_PUBLIC_CONTRACT_ID ?? "";
-  const rpcUrl = env.NEXT_PUBLIC_RPC_URL ?? "";
-  const passphrase = env.NEXT_PUBLIC_NETWORK_PASSPHRASE ?? "";
+  const contractId = env.NEXT_PUBLIC_CONTRACT_ID ?? '';
+  const rpcUrl = env.NEXT_PUBLIC_RPC_URL ?? '';
+  const passphrase = env.NEXT_PUBLIC_NETWORK_PASSPHRASE ?? '';
 
   // 1. Network must be a known value
   if (!network || !(network in NETWORK_MATRIX)) {
     drifts.push(
-      `NEXT_PUBLIC_STELLAR_NETWORK is '${network ?? "unset"}'; expected 'testnet' or 'mainnet'`
+      `NEXT_PUBLIC_STELLAR_NETWORK is '${network ?? 'unset'}'; expected 'testnet' or 'mainnet'`,
     );
     return {
       valid: false,
       drifts,
       effectiveConfig: {
-        network: network ?? "unset",
+        network: network ?? 'unset',
         rpcHostname: safeHostname(rpcUrl),
-        contractIdPrefix: contractId.slice(0, 8) || "(unset)",
+        contractIdPrefix: contractId.slice(0, 8) || '(unset)',
         passphraseMatch: false,
       },
     };
@@ -77,35 +79,36 @@ export function checkNetworkConfig(env: NodeJS.ProcessEnv = process.env): Config
 
   // 2. Contract ID format
   if (!contractId) {
-    drifts.push("NEXT_PUBLIC_CONTRACT_ID is not set");
+    drifts.push('NEXT_PUBLIC_CONTRACT_ID is not set');
   } else if (!matrix.contractIdPattern.test(contractId)) {
     drifts.push(
-      `NEXT_PUBLIC_CONTRACT_ID has invalid format for ${network} (expected 56-char Stellar contract address starting with 'C')`
+      `NEXT_PUBLIC_CONTRACT_ID has invalid format for ${network} (expected 56-char Stellar contract address starting with 'C')`,
     );
   }
 
   // 3. RPC hostname must belong to the expected environment
   const rpcHostname = safeHostname(rpcUrl);
-  if (rpcUrl && !matrix.rpcHostnames.some((h) => rpcHostname === h || rpcHostname.endsWith(`.${h}`))) {
+  if (
+    rpcUrl &&
+    !matrix.rpcHostnames.some((h) => rpcHostname === h || rpcHostname.endsWith(`.${h}`))
+  ) {
     drifts.push(
-      `NEXT_PUBLIC_RPC_URL hostname '${rpcHostname}' is not in the allowed list for ${network}: [${matrix.rpcHostnames.join(", ")}]`
+      `NEXT_PUBLIC_RPC_URL hostname '${rpcHostname}' is not in the allowed list for ${network}: [${matrix.rpcHostnames.join(', ')}]`,
     );
   }
 
   // 4. Network passphrase must match (if explicitly set)
   const passphraseMatch = !passphrase || passphrase === matrix.passphrase;
   if (!passphraseMatch) {
-    drifts.push(
-      `NEXT_PUBLIC_NETWORK_PASSPHRASE does not match expected value for ${network}`
-    );
+    drifts.push(`NEXT_PUBLIC_NETWORK_PASSPHRASE does not match expected value for ${network}`);
   }
 
   // 5. Cross-environment contamination: mainnet contract on testnet or vice-versa
   //    Heuristic: if network is testnet but passphrase looks like mainnet (or vice-versa)
-  const otherNetwork: NetworkEnv = network === "testnet" ? "mainnet" : "testnet";
+  const otherNetwork: NetworkEnv = network === 'testnet' ? 'mainnet' : 'testnet';
   if (passphrase && passphrase === NETWORK_MATRIX[otherNetwork].passphrase) {
     drifts.push(
-      `NEXT_PUBLIC_NETWORK_PASSPHRASE matches ${otherNetwork} but NEXT_PUBLIC_STELLAR_NETWORK is ${network} — possible environment contamination`
+      `NEXT_PUBLIC_NETWORK_PASSPHRASE matches ${otherNetwork} but NEXT_PUBLIC_STELLAR_NETWORK is ${network} — possible environment contamination`,
     );
   }
 
@@ -114,8 +117,8 @@ export function checkNetworkConfig(env: NodeJS.ProcessEnv = process.env): Config
     drifts,
     effectiveConfig: {
       network,
-      rpcHostname: rpcHostname || "(default)",
-      contractIdPrefix: contractId.slice(0, 8) || "(unset)",
+      rpcHostname: rpcHostname || '(default)',
+      contractIdPrefix: contractId.slice(0, 8) || '(unset)',
       passphraseMatch,
     },
   };
@@ -127,11 +130,11 @@ export function checkNetworkConfig(env: NodeJS.ProcessEnv = process.env): Config
  * Throws if the network configuration is invalid.
  * Call once at module load time in server-only code paths.
  */
-export function assertNetworkConfig(env: NodeJS.ProcessEnv = process.env): void {
+export function assertNetworkConfig(env: Record<string, string | undefined> = process.env): void {
   const result = checkNetworkConfig(env);
   if (!result.valid) {
     throw new Error(
-      `[Supply-Link] Network configuration drift detected:\n${result.drifts.map((d) => `  • ${d}`).join("\n")}`
+      `[Supply-Link] Network configuration drift detected:\n${result.drifts.map((d) => `  • ${d}`).join('\n')}`,
     );
   }
 }

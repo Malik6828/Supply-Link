@@ -1,13 +1,13 @@
 'use client';
 
 import { useStore } from '@/lib/state/store';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { CheckCircle2, Circle } from 'lucide-react';
 
 export function OnboardingChecklist() {
-  const { onboardingCompleted, onboardingChecklist, onboardingProgress, completeChecklistItem } =
-    useStore();
+  const { onboardingCompleted, onboardingChecklist, onboardingProgress } = useOnboardingSummary();
+  const completeChecklistItem = useStore((s) => s.completeChecklistItem);
 
   if (onboardingCompleted) {
     return null;

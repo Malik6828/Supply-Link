@@ -1,4 +1,4 @@
-import type { Product } from "@/lib/types";
+import type { Product } from '@/lib/types';
 
 interface RecallBannerProps {
   product: Product;
@@ -19,6 +19,7 @@ export function RecallBanner({ product }: RecallBannerProps) {
     <div
       role="alert"
       aria-live="assertive"
+      data-testid="recall-banner"
       className="flex items-start gap-3 rounded-lg border border-red-500 bg-red-50 px-4 py-3 text-red-800 dark:border-red-400 dark:bg-red-950 dark:text-red-200"
     >
       {/* Warning icon */}
@@ -37,14 +38,19 @@ export function RecallBanner({ product }: RecallBannerProps) {
       </svg>
 
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm">Product Recalled</p>
+        <p className="font-semibold text-sm" data-testid="recall-banner-title">
+          Product Recalled
+        </p>
         {product.recallReason && (
-          <p className="mt-0.5 text-sm">
+          <p className="mt-0.5 text-sm" data-testid="recall-banner-reason">
             <span className="font-medium">Reason:</span> {product.recallReason}
           </p>
         )}
         {recalledAt && (
-          <p className="mt-0.5 text-xs text-red-600 dark:text-red-400">
+          <p
+            className="mt-0.5 text-xs text-red-600 dark:text-red-400"
+            data-testid="recall-banner-timestamp"
+          >
             Recalled at {recalledAt}
           </p>
         )}

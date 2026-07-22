@@ -137,7 +137,7 @@ export async function searchEvents(query: SearchQuery): Promise<ParsedEvent[]> {
     if (query.productId && e.productId !== query.productId) return false;
     if (query.eventType && e.type !== query.eventType) return false;
 
-    const data = e.data as Record<string, unknown>;
+    const data = e.data as unknown as Record<string, unknown>;
     if (query.actor && String(data.actor ?? '') !== query.actor) return false;
     if (query.location) {
       const loc = String(data.location ?? '').toLowerCase();

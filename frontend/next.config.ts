@@ -83,10 +83,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  // next-intl@3's plugin still targets the pre-Next.js-15 `experimental.turbo` key;
-  // Turbopack now reads aliases from the top-level `turbopack` key instead, so the
-  // `next-intl/config` alias must be set here directly or requestLocale/getMessages
-  // fail to resolve their config module under `next dev` (Turbopack).
+  // Manually wire up next-intl's config alias for Turbopack builds.
+  // next-intl's createNextIntlPlugin uses experimental.turbo.resolveAlias which
+  // was moved to the top-level turbopack key in Next.js 15+, so we set it explicitly.
   turbopack: {
     resolveAlias: {
       'next-intl/config': './i18n/request.ts',
@@ -119,4 +118,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withNextIntl(withBundleAnalyzer(nextConfig));
+export default withBundleAnalyzer(withNextIntl(nextConfig));

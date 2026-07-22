@@ -33,8 +33,7 @@ import {
 const CLAIM_STATUS_BADGE: Record<ClaimProofStatus, string> = {
   pending:
     'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-300',
-  verified:
-    'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-300',
+  verified: 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-300',
   rejected: 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-400',
 };
 
@@ -47,9 +46,7 @@ function ClaimProofCard({ proof }: { proof: ClaimProof }) {
           <p className="font-medium text-[var(--foreground)] truncate">{proof.description}</p>
           <p className="text-[var(--muted)] mt-0.5">Filed: {filedAt}</p>
           {proof.proofRef && (
-            <p className="text-[var(--muted)] mt-0.5 font-mono truncate">
-              Ref: {proof.proofRef}
-            </p>
+            <p className="text-[var(--muted)] mt-0.5 font-mono truncate">Ref: {proof.proofRef}</p>
           )}
           {proof.verifierNotes && (
             <p className="text-[var(--muted)] mt-0.5 italic">{proof.verifierNotes}</p>
@@ -117,6 +114,9 @@ function CoverageCard({ coverage, productId, onClaimAdded }: CoverageCardProps) 
 
   return (
     <div
+      data-testid="coverage-card"
+      data-coverage-id={coverage.id}
+      data-coverage-status={coverage.status}
       className={`rounded-lg border p-4 ${
         expired
           ? 'border-[var(--card-border)] opacity-70 bg-[var(--muted-bg)]'
@@ -131,7 +131,10 @@ function CoverageCard({ coverage, productId, onClaimAdded }: CoverageCardProps) 
             aria-hidden="true"
           />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-[var(--foreground)] truncate">
+            <p
+              className="text-sm font-semibold text-[var(--foreground)] truncate"
+              data-testid="coverage-provider"
+            >
               {coverage.provider}
             </p>
             <p className="text-xs text-[var(--muted)] mt-0.5">
@@ -148,6 +151,7 @@ function CoverageCard({ coverage, productId, onClaimAdded }: CoverageCardProps) 
 
         <div className="flex items-center gap-2 shrink-0">
           <span
+            data-testid="coverage-status-badge"
             className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${COVERAGE_STATUS_BADGE[coverage.status]}`}
           >
             {coverage.status.charAt(0).toUpperCase() + coverage.status.slice(1)}
@@ -157,6 +161,7 @@ function CoverageCard({ coverage, productId, onClaimAdded }: CoverageCardProps) 
             onClick={() => setExpanded((v) => !v)}
             className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
             aria-label={expanded ? 'Collapse' : 'Expand'}
+            data-testid="coverage-expand-btn"
           >
             {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
@@ -194,15 +199,18 @@ function CoverageCard({ coverage, productId, onClaimAdded }: CoverageCardProps) 
               type="button"
               onClick={() => setShowClaimForm(true)}
               className="flex items-center gap-1.5 text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+              data-testid="add-claim-btn"
             >
               <Plus size={12} />
               Add claim proof
             </button>
           ) : (
-            <form onSubmit={handleAddClaim} className="space-y-2">
+            <form onSubmit={handleAddClaim} className="space-y-2" data-testid="claim-form">
               <p className="text-xs font-semibold text-[var(--foreground)]">New claim proof</p>
               {claimError && (
-                <p className="text-xs text-red-600 dark:text-red-400">{claimError}</p>
+                <p className="text-xs text-red-600 dark:text-red-400" data-testid="claim-error">
+                  {claimError}
+                </p>
               )}
               <input
                 type="text"
@@ -211,6 +219,7 @@ function CoverageCard({ coverage, productId, onClaimAdded }: CoverageCardProps) 
                 placeholder="Claim description"
                 className="w-full text-xs rounded border border-[var(--card-border)] bg-[var(--background)] px-2 py-1.5 text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
                 required
+                data-testid="claim-description-input"
               />
               <input
                 type="text"
@@ -219,6 +228,7 @@ function CoverageCard({ coverage, productId, onClaimAdded }: CoverageCardProps) 
                 placeholder="Proof reference (IPFS CID, URL, etc.)"
                 className="w-full text-xs rounded border border-[var(--card-border)] bg-[var(--background)] px-2 py-1.5 text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
                 required
+                data-testid="claim-proof-ref-input"
               />
               <input
                 type="text"
@@ -227,12 +237,14 @@ function CoverageCard({ coverage, productId, onClaimAdded }: CoverageCardProps) 
                 placeholder="Claimant address (G...)"
                 className="w-full text-xs rounded border border-[var(--card-border)] bg-[var(--background)] px-2 py-1.5 text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
                 required
+                data-testid="claim-claimant-input"
               />
               <div className="flex gap-2">
                 <button
                   type="submit"
                   disabled={submitting}
                   className="text-xs font-semibold px-3 py-1.5 rounded bg-[var(--primary)] text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                  data-testid="claim-submit-btn"
                 >
                   {submitting ? 'Submitting…' : 'Submit claim'}
                 </button>
@@ -303,24 +315,69 @@ function AddCoverageForm({ productId, onAdded, onCancel }: AddCoverageFormProps)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 pt-3 border-t border-[var(--card-border)]">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-3 pt-3 border-t border-[var(--card-border)]"
+      data-testid="add-coverage-form"
+    >
       <p className="text-xs font-semibold text-[var(--foreground)]">Add insurance coverage</p>
       {error && (
-        <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
+        <div
+          className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400"
+          data-testid="add-coverage-error"
+        >
           <AlertCircle size={12} />
           {error}
         </div>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {[
-          { label: 'Provider', value: provider, setter: setProvider, placeholder: 'Acme Insurance' },
-          { label: 'Policy number', value: policyNumber, setter: setPolicyNumber, placeholder: 'POL-12345' },
-          { label: 'Coverage type', value: coverageType, setter: setCoverageType, placeholder: 'product liability' },
-          { label: `Amount (${currency})`, value: coverageAmount, setter: setCoverageAmount, placeholder: '100000', type: 'number' },
+          {
+            label: 'Provider',
+            value: provider,
+            setter: setProvider,
+            placeholder: 'Acme Insurance',
+          },
+          {
+            label: 'Policy number',
+            value: policyNumber,
+            setter: setPolicyNumber,
+            placeholder: 'POL-12345',
+          },
+          {
+            label: 'Coverage type',
+            value: coverageType,
+            setter: setCoverageType,
+            placeholder: 'product liability',
+          },
+          {
+            label: `Amount (${currency})`,
+            value: coverageAmount,
+            setter: setCoverageAmount,
+            placeholder: '100000',
+            type: 'number',
+          },
           { label: 'Currency', value: currency, setter: setCurrency, placeholder: 'USD' },
-          { label: 'Registrar address', value: registeredBy, setter: setRegisteredBy, placeholder: 'G...' },
-          { label: 'Valid from', value: validFrom, setter: setValidFrom, placeholder: '', type: 'date' },
-          { label: 'Valid until (leave blank = no expiry)', value: validUntil, setter: setValidUntil, placeholder: '', type: 'date' },
+          {
+            label: 'Registrar address',
+            value: registeredBy,
+            setter: setRegisteredBy,
+            placeholder: 'G...',
+          },
+          {
+            label: 'Valid from',
+            value: validFrom,
+            setter: setValidFrom,
+            placeholder: '',
+            type: 'date',
+          },
+          {
+            label: 'Valid until (leave blank = no expiry)',
+            value: validUntil,
+            setter: setValidUntil,
+            placeholder: '',
+            type: 'date',
+          },
         ].map(({ label, value, setter, placeholder, type }) => (
           <div key={label}>
             <label className="block text-xs text-[var(--muted)] mb-1">{label}</label>
@@ -351,6 +408,7 @@ function AddCoverageForm({ productId, onAdded, onCancel }: AddCoverageFormProps)
           type="submit"
           disabled={submitting}
           className="text-xs font-semibold px-3 py-1.5 rounded bg-[var(--primary)] text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+          data-testid="add-coverage-submit-btn"
         >
           {submitting ? 'Adding…' : 'Add coverage'}
         </button>
@@ -404,20 +462,26 @@ export function InsuranceCoveragePanel({ productId, canAdd = false }: InsuranceC
   const verification = verifyCoverage(productId);
 
   return (
-    <section aria-label="Insurance coverage">
+    <section aria-label="Insurance coverage" data-testid="insurance-coverage-panel">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           {verification.covered ? (
-            <ShieldCheck size={16} className="text-green-600 dark:text-green-400" aria-hidden="true" />
+            <ShieldCheck
+              size={16}
+              className="text-green-600 dark:text-green-400"
+              aria-hidden="true"
+            />
           ) : (
             <ShieldAlert size={16} className="text-[var(--muted)]" aria-hidden="true" />
           )}
-          <h3 className="text-sm font-semibold text-[var(--foreground)]">
-            Insurance Coverage
-          </h3>
+          <h3 className="text-sm font-semibold text-[var(--foreground)]">Insurance Coverage</h3>
           {verification.covered && (
-            <span className="text-xs text-green-700 dark:text-green-400 font-medium">
-              · {formatCoverageAmount(verification.totalCoverageAmount, verification.currency)} covered
+            <span
+              className="text-xs text-green-700 dark:text-green-400 font-medium"
+              data-testid="insurance-total-coverage"
+            >
+              · {formatCoverageAmount(verification.totalCoverageAmount, verification.currency)}{' '}
+              covered
             </span>
           )}
         </div>
@@ -427,24 +491,30 @@ export function InsuranceCoveragePanel({ productId, canAdd = false }: InsuranceC
           disabled={loading}
           className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors disabled:opacity-40"
           aria-label="Refresh coverage"
+          data-testid="insurance-refresh-btn"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 mb-4">
+        <div
+          className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 mb-4"
+          data-testid="insurance-error"
+        >
           <AlertCircle size={14} />
           {error}
         </div>
       )}
 
       {!loading && coverages.length === 0 && (
-        <p className="text-sm text-[var(--muted)]">No insurance coverage registered for this product.</p>
+        <p className="text-sm text-[var(--muted)]" data-testid="insurance-empty">
+          No insurance coverage registered for this product.
+        </p>
       )}
 
       {coverages.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-3" data-testid="insurance-coverage-list">
           {coverages.map((coverage) => (
             <CoverageCard
               key={coverage.id}
@@ -461,6 +531,7 @@ export function InsuranceCoveragePanel({ productId, canAdd = false }: InsuranceC
           type="button"
           onClick={() => setShowAddForm(true)}
           className="mt-3 flex items-center gap-1.5 text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+          data-testid="insurance-add-coverage-btn"
         >
           <Plus size={12} />
           Add insurance coverage
@@ -470,7 +541,10 @@ export function InsuranceCoveragePanel({ productId, canAdd = false }: InsuranceC
       {canAdd && showAddForm && (
         <AddCoverageForm
           productId={productId}
-          onAdded={() => { setShowAddForm(false); load(); }}
+          onAdded={() => {
+            setShowAddForm(false);
+            load();
+          }}
           onCancel={() => setShowAddForm(false)}
         />
       )}

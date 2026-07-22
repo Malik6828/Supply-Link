@@ -1,4 +1,10 @@
-import type { Product, TrackingEvent, ProductAssembly, WarrantyInfo, WarrantyClaim } from '@/lib/types';
+import type {
+  Product,
+  TrackingEvent,
+  ProductAssembly,
+  WarrantyInfo,
+  WarrantyClaim,
+} from '@/lib/types';
 
 export const MOCK_PRODUCTS: Product[] = [
   {
@@ -264,6 +270,27 @@ export const MOCK_EVENTS: TrackingEvent[] = [
     }),
   },
 ];
+
+// ── E2E test seed product — recalled, inactive ────────────────────────────────
+
+export const MOCK_RECALLED_PRODUCT: Product = {
+  id: 'prod-recalled-e2e',
+  name: 'Recalled Test Coffee',
+  origin: 'Ethiopia',
+  owner: 'GABC1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+  timestamp: 1710000000000,
+  active: false,
+  recalled: true,
+  recallReason: 'Contamination detected during quality control inspection.',
+  recallTimestamp: 1720000000,
+  authorizedActors: [],
+  ownershipHistory: [],
+  category: 'agricultural',
+  subcategory: 'coffee',
+  certifications: [],
+};
+
+MOCK_PRODUCTS.push(MOCK_RECALLED_PRODUCT);
 
 export function getProductById(id: string): Product | undefined {
   return MOCK_PRODUCTS.find((p) => p.id === id);

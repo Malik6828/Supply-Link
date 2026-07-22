@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
+import { WifiOff, AlertTriangle } from 'lucide-react';
 import { Button, Input, Select, SelectItem, FileUpload } from '@/components/ui';
 import { useToast } from '@/lib/hooks/useToast';
 import { EventType } from '@/lib/types';
@@ -33,6 +34,17 @@ export function AddEventForm({ productId: initialProductId, onSuccess }: AddEven
   const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
   const [isPrivate, setIsPrivate] = useState(false);
   const [sealed, setSealed] = useState<SealedMetadata | null>(null);
+  const [complianceError, setComplianceError] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== 'undefined' ? navigator.onLine : true,
+  );
+  // Offline queue stub — replace with a real offline queue implementation
+  const offlineQueue = {
+    enqueue: (_item: unknown) => {
+      console.warn('Offline queue not implemented. Item dropped:', _item);
+    },
+  };
+  const clearDraft = () => {};
 
   const {
     register,

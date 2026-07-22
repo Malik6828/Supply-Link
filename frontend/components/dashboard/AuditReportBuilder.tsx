@@ -15,7 +15,8 @@ import {
 
 export function AuditReportBuilder() {
   const t = useTranslations('auditReport');
-  const { products, events } = useStore();
+  const products = useProductsList();
+  const events = useEventsList();
   const [startDate, setStartDate] = useState<string>(
     new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0],
   );
