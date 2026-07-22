@@ -11,6 +11,17 @@ const TEST_WALLET = 'GTESTE2EWALLET0000000000000000000000000000000000000001';
 
 const STORE_KEY = 'supply-link-store';
 
+// The app registers a service worker (public/sw.js) that treats any navigation
+// slower than 5s as a network failure and serves a cached/offline fallback
+// instead. Turbopack dev-mode cold-compiles each route on its first hit (well
+// over 5s for these dashboard routes), so without this the service worker
+// races the real page load and can serve stale/wrong content. Blocking sw.js
+// from ever registering keeps these tests deterministic; it doesn't touch the
+// production service worker itself.
+test.beforeEach(async ({ page }) => {
+  await page.route('**/sw.js', (route) => route.abort());
+});
+
 async function seedWallet(page: Page) {
   await page.addInitScript(
     ({ key, wallet }) => {
@@ -71,11 +82,24 @@ async function seedAuditReportData(page: Page) {
     },
   ];
 
+  // Store state is normalized: productsById/productOrder and eventsById/eventOrder
+  // (keyed by id, and by `${productId}__${timestamp}` respectively — see lib/state/keys.ts)
+  // rather than flat arrays.
   await page.addInitScript(
     ({ key, wallet, products, events }) => {
+      const productsById = Object.fromEntries(products.map((p) => [p.id, p]));
+      const productOrder = products.map((p) => p.id);
+      const eventsById = Object.fromEntries(
+        events.map((e) => [`${e.productId}__${e.timestamp}`, e]),
+      );
+      const eventOrder = events.map((e) => `${e.productId}__${e.timestamp}`);
+
       window.localStorage.setItem(
         key,
-        JSON.stringify({ state: { walletAddress: wallet, products, events }, version: 0 }),
+        JSON.stringify({
+          state: { walletAddress: wallet, productsById, productOrder, eventsById, eventOrder },
+          version: 0,
+        }),
       );
     },
     { key: STORE_KEY, wallet: TEST_WALLET, products, events },
@@ -83,6 +107,11 @@ async function seedAuditReportData(page: Page) {
 }
 
 test.describe('E2E: Compliance scorecard and audit reporting', () => {
+  // A first-ever hit on one of these dashboard routes can cold-compile for
+  // 25-30s+ under Turbopack dev mode; the default 30s test timeout leaves no
+  // room for the rest of the test's assertions after that one-time cost.
+  test.describe.configure({ timeout: 60_000 });
+
   test('opens the compliance scorecard for a full event chain product and shows score + metrics', async ({
     page,
   }) => {
@@ -92,7 +121,9 @@ test.describe('E2E: Compliance scorecard and audit reporting', () => {
     // SHIPPING → RETAIL chain across 3 distinct actors.
     await page.goto('/en/compliance/scorecard/prod-001');
 
-    await expect(page.getByTestId('scorecard-overall-score')).toBeVisible();
+    // Generous timeout on first navigation: Turbopack dev-mode cold-compiles
+    // each route on first hit, which can exceed the default 5s expect timeout.
+    await expect(page.getByTestId('scorecard-overall-score')).toBeVisible({ timeout: 45_000 });
     await expect(page.getByTestId('scorecard-grade')).toBeVisible();
 
     const scoreText = await page.getByTestId('scorecard-overall-score').innerText();
@@ -115,7 +146,7 @@ test.describe('E2E: Compliance scorecard and audit reporting', () => {
     // full supply-chain is incomplete and should surface a recommendation.
     await page.goto('/en/compliance/scorecard/prod-002');
 
-    await expect(page.getByTestId('scorecard-overall-score')).toBeVisible();
+    await expect(page.getByTestId('scorecard-overall-score')).toBeVisible({ timeout: 45_000 });
 
     const gaps = page.getByTestId('scorecard-gaps');
     await expect(gaps).toBeVisible();
@@ -127,7 +158,7 @@ test.describe('E2E: Compliance scorecard and audit reporting', () => {
 
     await page.goto('/en/compliance/scorecard/does-not-exist');
 
-    await expect(page.getByText(/Failed to load scorecard/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/Failed to load scorecard/i)).toBeVisible({ timeout: 45_000 });
   });
 
   test('generates an audit report and downloads a non-empty CSV artifact', async ({ page }) => {
@@ -198,7 +229,7 @@ test.describe('E2E: Compliance scorecard and audit reporting', () => {
 
     await page.goto('/en/observability');
 
-    await expect(page.getByTestId('observability-page')).toBeVisible();
+    await expect(page.getByTestId('observability-page')).toBeVisible({ timeout: 45_000 });
     await expect(page.getByText('API Observability')).toBeVisible();
     await expect(page.getByText('Endpoints tracked')).toBeVisible();
     await expect(page.getByText('Endpoint SLIs')).toBeVisible();

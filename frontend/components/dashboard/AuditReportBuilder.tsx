@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useStore } from '@/lib/state/store';
+import { useProductsList } from '@/lib/state/selectors/products';
+import { useEventsList } from '@/lib/state/selectors/events';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Calendar, Download, FileJson, FileText } from 'lucide-react';
