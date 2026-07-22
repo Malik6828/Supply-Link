@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useStore } from '@/lib/state/store';
+import { useWalletAddress } from '@/lib/state/selectors/wallet';
 import { toast } from 'sonner';
 import { Star } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -21,7 +21,7 @@ interface RatingWidgetProps {
 
 export function RatingWidget({ productId }: RatingWidgetProps) {
   const t = useTranslations('ratings');
-  const { walletAddress } = useStore();
+  const walletAddress = useWalletAddress();
   const [stats, setStats] = useState<RatingStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [stars, setStars] = useState(0);

@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/Button';
 import { CheckCircle2, Circle } from 'lucide-react';
 
 export function OnboardingChecklist() {
-  const { onboardingCompleted, onboardingChecklist, onboardingProgress, completeChecklistItem } =
-    useStore();
+  const { onboardingCompleted, onboardingChecklist, onboardingProgress } = useOnboardingSummary();
+  const completeChecklistItem = useStore((s) => s.completeChecklistItem);
 
   if (onboardingCompleted) {
     return null;
