@@ -1,9 +1,11 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useStore } from "@/lib/state/store";
-import { MOCK_PRODUCTS, MOCK_EVENTS } from "@/lib/mock/products";
-import type { EventType } from "@/lib/types";
+import { useEffect } from 'react';
+import { useStore } from '@/lib/state/store';
+import { useProductsList, useProductsMap } from '@/lib/state/selectors/products';
+import { useEventsList } from '@/lib/state/selectors/events';
+import { MOCK_PRODUCTS, MOCK_EVENTS } from '@/lib/mock/products';
+import type { EventType } from '@/lib/types';
 
 const CACHE_TTL_MS = 60_000;
 
@@ -47,8 +49,13 @@ export interface ActorActivity {
 }
 
 export function useDashboardData(range?: DateRange) {
-  const { products, events, lastFetched, setProducts, setEvents, setLastFetched } =
-    useStore();
+  const products = useProductsList();
+  const productsById = useProductsMap();
+  const events = useEventsList();
+  const lastFetched = useStore((s) => s.lastFetched);
+  const setProducts = useStore((s) => s.setProducts);
+  const setEvents = useStore((s) => s.setEvents);
+  const setLastFetched = useStore((s) => s.setLastFetched);
 
   useEffect(() => {
     const now = Date.now();
@@ -75,7 +82,7 @@ export function useDashboardData(range?: DateRange) {
   const rangeDays = Math.min(90, Math.ceil((to - from) / 86_400_000) || 30);
   const dailyCounts: DailyCount[] = Array.from({ length: rangeDays }, (_, i) => {
     const d = new Date(to - (rangeDays - 1 - i) * 86_400_000);
-    const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
     const dayEnd = dayStart + 86_400_000;
     return {
@@ -87,12 +94,12 @@ export function useDashboardData(range?: DateRange) {
   // Event type distribution
   const typeMap: Record<EventType, number> = { HARVEST: 0, PROCESSING: 0, SHIPPING: 0, RETAIL: 0 };
   for (const e of filteredEvents) typeMap[e.eventType] = (typeMap[e.eventType] ?? 0) + 1;
-  const eventTypeCounts: EventTypeCount[] = (
-    Object.entries(typeMap) as [EventType, number][]
-  ).map(([name, value]) => ({ name, value }));
+  const eventTypeCounts: EventTypeCount[] = (Object.entries(typeMap) as [EventType, number][]).map(
+    ([name, value]) => ({ name, value }),
+  );
 
   // Average processing time per stage (hours between consecutive events on same product)
-  const STAGES: EventType[] = ["HARVEST", "PROCESSING", "SHIPPING", "RETAIL"];
+  const STAGES: EventType[] = ['HARVEST', 'PROCESSING', 'SHIPPING', 'RETAIL'];
   const processingTimes: ProcessingTime[] = STAGES.map((stage) => {
     const stageEvents = filteredEvents
       .filter((e) => e.eventType === stage)
@@ -116,7 +123,7 @@ export function useDashboardData(range?: DateRange) {
     .slice(0, 10)
     .map(([productId, count]) => ({
       productId,
-      name: products.find((p) => p.id === productId)?.name ?? productId,
+      name: productsById[productId]?.name ?? productId,
       count,
     }));
 
@@ -133,9 +140,7 @@ export function useDashboardData(range?: DateRange) {
       count,
     }));
 
-  const recentEvents = [...filteredEvents]
-    .sort((a, b) => b.timestamp - a.timestamp)
-    .slice(0, 10);
+  const recentEvents = [...filteredEvents].sort((a, b) => b.timestamp - a.timestamp).slice(0, 10);
 
   return {
     stats,

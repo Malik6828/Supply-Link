@@ -1,44 +1,93 @@
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { randomBytes } from 'crypto';
-import type { Webhook, WebhookDeliveryAttempt } from './types';
-
-// Store webhooks in a JSON file in the project (consider using a real DB in production)
-const WEBHOOKS_DIR = path.join(process.cwd(), '.kiro', 'webhooks');
-const WEBHOOKS_FILE = path.join(WEBHOOKS_DIR, 'webhooks.json');
-const DELIVERY_ATTEMPTS_FILE = path.join(WEBHOOKS_DIR, 'delivery-attempts.json');
-
 /**
- * Ensure the webhooks directory exists
+ * Webhook & delivery-attempt persistence.
+ *
+ * Backed by the shared KVStore (Vercel KV in production, in-memory Map in
+ * dev/test — see lib/kv.ts) instead of a local JSON file, so state survives
+ * across serverless invocations.
+ *
+ * KV layout:
+ *   webhook:<id>                                   -> Webhook (JSON)
+ *   webhook:list                                   -> string[] of webhook ids
+ *   webhook:attempt:<webhookId>:<payloadId>:<n>     -> WebhookDeliveryAttempt (JSON)
+ *   webhook:attempt:pending:list                   -> string[] of attempt keys awaiting retry
+ *   webhook:deadletter:list                        -> string[] of attempt keys that exhausted retries
  */
-async function ensureDir(): Promise<void> {
-  try {
-    await fs.mkdir(WEBHOOKS_DIR, { recursive: true });
-  } catch (err) {
-    // Directory might already exist or we're in a read-only environment
+import { randomBytes } from 'crypto';
+import { kvStore } from '@/lib/kv';
+import type { Webhook, WebhookDeliveryAttempt } from './types';
+import {
+  WEBHOOK_RECORD_TTL_SECONDS,
+  WEBHOOK_ATTEMPT_TTL_SECONDS,
+  WEBHOOK_DEADLETTER_TTL_SECONDS,
+} from './config';
+
+const WEBHOOK_LIST_KEY = 'webhook:list';
+const PENDING_ATTEMPTS_LIST_KEY = 'webhook:attempt:pending:list';
+const DEADLETTER_LIST_KEY = 'webhook:deadletter:list';
+
+function webhookKey(id: string): string {
+  return `webhook:${id}`;
+}
+
+function attemptKey(webhookId: string, payloadId: string, attemptNumber: number): string {
+  return `webhook:attempt:${webhookId}:${payloadId}:${attemptNumber}`;
+}
+
+// ── Generic list-index helpers ────────────────────────────────────────────────
+
+async function readList(key: string): Promise<string[]> {
+  const raw = await kvStore.get(key);
+  return raw ? (JSON.parse(raw) as string[]) : [];
+}
+
+async function addToList(key: string, value: string, ttlSeconds: number): Promise<void> {
+  const list = await readList(key);
+  if (!list.includes(value)) {
+    list.push(value);
+    await kvStore.set(key, JSON.stringify(list), ttlSeconds);
   }
 }
+
+async function removeFromList(key: string, value: string, ttlSeconds: number): Promise<void> {
+  const list = await readList(key);
+  const filtered = list.filter((v) => v !== value);
+  if (filtered.length !== list.length) {
+    await kvStore.set(key, JSON.stringify(filtered), ttlSeconds);
+  }
+}
+
+// ── Idempotency helper (used by the processing tick) ─────────────────────────
+
+/**
+ * Attempt to claim a one-time key. Returns true the first time it's called for
+ * a given key within the TTL window, false on every subsequent call — allowing
+ * callers to dedupe repeated/concurrent work.
+ */
+export async function claimOnce(key: string, ttlSeconds: number): Promise<boolean> {
+  const existing = await kvStore.get(key);
+  if (existing) return false;
+  await kvStore.set(key, '1', ttlSeconds);
+  return true;
+}
+
+// ── Webhook CRUD ──────────────────────────────────────────────────────────────
 
 /**
  * Read all webhooks from storage
  */
 export async function getWebhooks(): Promise<Webhook[]> {
-  await ensureDir();
-  try {
-    const data = await fs.readFile(WEBHOOKS_FILE, 'utf-8');
-    return JSON.parse(data) as Webhook[];
-  } catch {
-    // File doesn't exist yet
-    return [];
-  }
+  const ids = await readList(WEBHOOK_LIST_KEY);
+  const webhooks = await Promise.all(ids.map((id) => getWebhookById(id)));
+  return webhooks.filter((w): w is Webhook => w !== null);
 }
 
 /**
  * Get a single webhook by ID
  */
 export async function getWebhookById(id: string): Promise<Webhook | null> {
-  const webhooks = await getWebhooks();
-  return webhooks.find((w) => w.id === id) || null;
+  const raw = await kvStore.get(webhookKey(id));
+  if (!raw) return null;
+  return JSON.parse(raw) as Webhook;
 }
 
 /**
@@ -59,7 +108,6 @@ export async function createWebhook(url: string, providedSecret?: string): Promi
     throw new Error(`Webhook URL must use HTTPS (got ${parsed.protocol}//)`);
   }
 
-  await ensureDir();
   const id = randomBytes(16).toString('hex');
   const secret = providedSecret || randomBytes(32).toString('hex');
   const now = Date.now();
@@ -74,9 +122,8 @@ export async function createWebhook(url: string, providedSecret?: string): Promi
     failureCount: 0,
   };
 
-  const webhooks = await getWebhooks();
-  webhooks.push(webhook);
-  await fs.writeFile(WEBHOOKS_FILE, JSON.stringify(webhooks, null, 2));
+  await kvStore.set(webhookKey(id), JSON.stringify(webhook), WEBHOOK_RECORD_TTL_SECONDS);
+  await addToList(WEBHOOK_LIST_KEY, id, WEBHOOK_RECORD_TTL_SECONDS);
 
   return webhook;
 }
@@ -88,13 +135,9 @@ export async function updateWebhook(
   id: string,
   updates: Partial<Webhook>,
 ): Promise<Webhook | null> {
-  await ensureDir();
-  const webhooks = await getWebhooks();
-  const index = webhooks.findIndex((w) => w.id === id);
+  const webhook = await getWebhookById(id);
+  if (!webhook) return null;
 
-  if (index === -1) return null;
-
-  const webhook = webhooks[index];
   const updated: Webhook = {
     ...webhook,
     ...updates,
@@ -102,8 +145,7 @@ export async function updateWebhook(
     updatedAt: Date.now(),
   };
 
-  webhooks[index] = updated;
-  await fs.writeFile(WEBHOOKS_FILE, JSON.stringify(webhooks, null, 2));
+  await kvStore.set(webhookKey(id), JSON.stringify(updated), WEBHOOK_RECORD_TTL_SECONDS);
 
   return updated;
 }
@@ -112,13 +154,11 @@ export async function updateWebhook(
  * Delete a webhook
  */
 export async function deleteWebhook(id: string): Promise<boolean> {
-  await ensureDir();
-  const webhooks = await getWebhooks();
-  const filtered = webhooks.filter((w) => w.id !== id);
+  const webhook = await getWebhookById(id);
+  if (!webhook) return false;
 
-  if (filtered.length === webhooks.length) return false; // Not found
-
-  await fs.writeFile(WEBHOOKS_FILE, JSON.stringify(filtered, null, 2));
+  await kvStore.del(webhookKey(id));
+  await removeFromList(WEBHOOK_LIST_KEY, id, WEBHOOK_RECORD_TTL_SECONDS);
 
   // Also delete associated subscriptions
   try {
@@ -140,22 +180,22 @@ export async function getActiveWebhooks(): Promise<Webhook[]> {
   return webhooks.filter((w) => w.active);
 }
 
+// ── Delivery attempts ─────────────────────────────────────────────────────────
+
 /**
- * Record a webhook delivery attempt
+ * Record a webhook delivery attempt.
+ * Attempts left 'pending' are tracked for the retry tick; attempts that land in
+ * a terminal 'failed' state (retries exhausted) are recorded as dead letters.
  */
 export async function recordDeliveryAttempt(attempt: WebhookDeliveryAttempt): Promise<void> {
-  await ensureDir();
-  let attempts: WebhookDeliveryAttempt[] = [];
+  const key = attemptKey(attempt.webhookId, attempt.payloadId, attempt.attemptNumber);
+  await kvStore.set(key, JSON.stringify(attempt), WEBHOOK_ATTEMPT_TTL_SECONDS);
 
-  try {
-    const data = await fs.readFile(DELIVERY_ATTEMPTS_FILE, 'utf-8');
-    attempts = JSON.parse(data) as WebhookDeliveryAttempt[];
-  } catch {
-    // File doesn't exist yet
+  if (attempt.status === 'pending') {
+    await addToList(PENDING_ATTEMPTS_LIST_KEY, key, WEBHOOK_ATTEMPT_TTL_SECONDS);
+  } else if (attempt.status === 'failed') {
+    await addToList(DEADLETTER_LIST_KEY, key, WEBHOOK_DEADLETTER_TTL_SECONDS);
   }
-
-  attempts.push(attempt);
-  await fs.writeFile(DELIVERY_ATTEMPTS_FILE, JSON.stringify(attempts, null, 2));
 }
 
 /**
@@ -164,16 +204,27 @@ export async function recordDeliveryAttempt(attempt: WebhookDeliveryAttempt): Pr
 export async function getPendingDeliveryAttempts(
   now: number = Date.now(),
 ): Promise<WebhookDeliveryAttempt[]> {
-  await ensureDir();
-  try {
-    const data = await fs.readFile(DELIVERY_ATTEMPTS_FILE, 'utf-8');
-    const attempts = JSON.parse(data) as WebhookDeliveryAttempt[];
-    return attempts.filter(
-      (a) => a.status === 'pending' && a.nextRetryAt !== undefined && a.nextRetryAt <= now,
-    );
-  } catch {
-    return [];
+  const keys = await readList(PENDING_ATTEMPTS_LIST_KEY);
+  const attempts: WebhookDeliveryAttempt[] = [];
+
+  for (const key of keys) {
+    const raw = await kvStore.get(key);
+    if (!raw) {
+      // Expired/missing — drop it from the index.
+      await removeFromList(PENDING_ATTEMPTS_LIST_KEY, key, WEBHOOK_ATTEMPT_TTL_SECONDS);
+      continue;
+    }
+    const attempt = JSON.parse(raw) as WebhookDeliveryAttempt;
+    if (
+      attempt.status === 'pending' &&
+      attempt.nextRetryAt !== undefined &&
+      attempt.nextRetryAt <= now
+    ) {
+      attempts.push(attempt);
+    }
   }
+
+  return attempts;
 }
 
 /**
@@ -185,21 +236,35 @@ export async function updateDeliveryAttempt(
   attemptNumber: number,
   updates: Partial<WebhookDeliveryAttempt>,
 ): Promise<void> {
-  await ensureDir();
-  try {
-    const data = await fs.readFile(DELIVERY_ATTEMPTS_FILE, 'utf-8');
-    const attempts = JSON.parse(data) as WebhookDeliveryAttempt[];
-    const index = attempts.findIndex(
-      (a) =>
-        a.payloadId === payloadId && a.webhookId === webhookId && a.attemptNumber === attemptNumber,
-    );
-    if (index !== -1) {
-      attempts[index] = { ...attempts[index], ...updates, updatedAt: Date.now() };
-      await fs.writeFile(DELIVERY_ATTEMPTS_FILE, JSON.stringify(attempts, null, 2));
-    }
-  } catch {
-    // Ignore if file doesn't exist
+  const key = attemptKey(webhookId, payloadId, attemptNumber);
+  const raw = await kvStore.get(key);
+  if (!raw) return;
+
+  const existing = JSON.parse(raw) as WebhookDeliveryAttempt;
+  const updated: WebhookDeliveryAttempt = { ...existing, ...updates, updatedAt: Date.now() };
+  await kvStore.set(key, JSON.stringify(updated), WEBHOOK_ATTEMPT_TTL_SECONDS);
+
+  if (updated.status !== 'pending') {
+    await removeFromList(PENDING_ATTEMPTS_LIST_KEY, key, WEBHOOK_ATTEMPT_TTL_SECONDS);
   }
+  if (updated.status === 'failed') {
+    await addToList(DEADLETTER_LIST_KEY, key, WEBHOOK_DEADLETTER_TTL_SECONDS);
+  }
+}
+
+/**
+ * Get dead-lettered delivery attempts (retries exhausted without success).
+ */
+export async function getDeadLetterDeliveries(): Promise<WebhookDeliveryAttempt[]> {
+  const keys = await readList(DEADLETTER_LIST_KEY);
+  const attempts: WebhookDeliveryAttempt[] = [];
+
+  for (const key of keys) {
+    const raw = await kvStore.get(key);
+    if (raw) attempts.push(JSON.parse(raw) as WebhookDeliveryAttempt);
+  }
+
+  return attempts;
 }
 
 /**

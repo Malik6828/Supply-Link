@@ -48,7 +48,7 @@ describe('resolveLocation', () => {
 describe('detectLocationAnomalies', () => {
   it('returns no anomalies for single event', () => {
     const result = detectLocationAnomalies('prod-1', [
-      { event_type: 'HARVEST', timestamp: 1000, location: 'new york' },
+      { eventType: 'HARVEST', timestamp: 1000, location: 'new york' },
     ]);
     expect(result.anomaliesDetected).toBe(0);
     expect(result.riskLevel).toBe('low');
@@ -61,24 +61,24 @@ describe('detectLocationAnomalies', () => {
 
   it('ignores events without location', () => {
     const result = detectLocationAnomalies('prod-1', [
-      { event_type: 'HARVEST', timestamp: 1000, location: '' },
-      { event_type: 'PROCESSING', timestamp: 2000, location: '' },
+      { eventType: 'HARVEST', timestamp: 1000, location: '' },
+      { eventType: 'PROCESSING', timestamp: 2000, location: '' },
     ]);
     expect(result.anomaliesDetected).toBe(0);
   });
 
   it('ignores events in the same location', () => {
     const result = detectLocationAnomalies('prod-1', [
-      { event_type: 'HARVEST', timestamp: 1000, location: 'new york' },
-      { event_type: 'PROCESSING', timestamp: 5000, location: 'new york' },
+      { eventType: 'HARVEST', timestamp: 1000, location: 'new york' },
+      { eventType: 'PROCESSING', timestamp: 5000, location: 'new york' },
     ]);
     expect(result.anomaliesDetected).toBe(0);
   });
 
   it('flags impossible travel between New York and London in 60 seconds', () => {
     const result = detectLocationAnomalies('prod-1', [
-      { event_type: 'HARVEST', timestamp: 0, location: 'new york' },
-      { event_type: 'PROCESSING', timestamp: 60, location: 'london' },
+      { eventType: 'HARVEST', timestamp: 0, location: 'new york' },
+      { eventType: 'PROCESSING', timestamp: 60, location: 'london' },
     ]);
     expect(result.anomaliesDetected).toBeGreaterThan(0);
     expect(['high', 'critical']).toContain(result.riskLevel);
@@ -86,8 +86,8 @@ describe('detectLocationAnomalies', () => {
 
   it('flags an alert with correct structure', () => {
     const result = detectLocationAnomalies('prod-1', [
-      { event_type: 'HARVEST', timestamp: 0, location: 'new york' },
-      { event_type: 'PROCESSING', timestamp: 60, location: 'london' },
+      { eventType: 'HARVEST', timestamp: 0, location: 'new york' },
+      { eventType: 'PROCESSING', timestamp: 60, location: 'london' },
     ]);
     const alert = result.alerts[0];
     expect(alert.fromLocation).toBe('new york');
@@ -98,24 +98,24 @@ describe('detectLocationAnomalies', () => {
 
   it('allows realistic air travel between NY and London in 10 hours', () => {
     const result = detectLocationAnomalies('prod-1', [
-      { event_type: 'HARVEST', timestamp: 0, location: 'new york' },
-      { event_type: 'PROCESSING', timestamp: 36000, location: 'london' }, // 10 hours
+      { eventType: 'HARVEST', timestamp: 0, location: 'new york' },
+      { eventType: 'PROCESSING', timestamp: 36000, location: 'london' }, // 10 hours
     ]);
     expect(result.anomaliesDetected).toBe(0);
   });
 
   it('sets riskLevel to critical for extreme anomaly', () => {
     const result = detectLocationAnomalies('prod-1', [
-      { event_type: 'HARVEST', timestamp: 0, location: 'new york' },
-      { event_type: 'PROCESSING', timestamp: 1, location: 'tokyo' }, // 1 second for ~10,800 km
+      { eventType: 'HARVEST', timestamp: 0, location: 'new york' },
+      { eventType: 'PROCESSING', timestamp: 1, location: 'tokyo' }, // 1 second for ~10,800 km
     ]);
     expect(result.riskLevel).toBe('critical');
   });
 
   it('returns correct productId and totalEvents', () => {
     const result = detectLocationAnomalies('prod-xyz', [
-      { event_type: 'HARVEST', timestamp: 0, location: 'new york' },
-      { event_type: 'PROCESSING', timestamp: 10000, location: 'chicago' },
+      { eventType: 'HARVEST', timestamp: 0, location: 'new york' },
+      { eventType: 'PROCESSING', timestamp: 10000, location: 'chicago' },
     ]);
     expect(result.productId).toBe('prod-xyz');
     expect(result.totalEvents).toBe(2);

@@ -3,7 +3,11 @@
 import { useMemo, useState } from 'react';
 import { Archive } from 'lucide-react';
 import type { TrackingEvent, EventType } from '@/lib/types';
-import { calculateActorReputations, calculateEventTrust, getEventTrustBadgeClass } from '@/lib/services/eventTrust';
+import {
+  calculateActorReputations,
+  calculateEventTrust,
+  getEventTrustBadgeClass,
+} from '@/lib/services/eventTrust';
 import { PrivateMetadataViewer } from './PrivateMetadataViewer';
 
 const DEFAULT_EVENT_LABELS: Record<EventType, string> = {
@@ -35,6 +39,10 @@ interface EventTimelineProps {
   hideArchivedByDefault?: boolean;
   /** Called when the user requests to archive an event. */
   onArchiveRequest?: (stableId: string) => void;
+  /** Currently highlighted event (e.g. from map hover). */
+  highlightedEvent?: TrackingEvent | null;
+  /** Called when the user selects an event in the timeline. */
+  onSelectEvent?: (event: TrackingEvent | null) => void;
 }
 
 export function EventTimeline({
@@ -61,9 +69,8 @@ export function EventTimeline({
     );
   }, [events]);
 
-  const activeEvents = hideArchivedByDefault && !showArchived
-    ? events.filter((e) => !e.archived)
-    : events;
+  const activeEvents =
+    hideArchivedByDefault && !showArchived ? events.filter((e) => !e.archived) : events;
 
   const archivedCount = events.filter((e) => e.archived).length;
 
@@ -90,10 +97,7 @@ export function EventTimeline({
       ) : (
         <ol className="relative border-l border-[var(--card-border)] ml-2 space-y-6">
           {activeEvents.map((event, i) => (
-            <li
-              key={event.stableId ?? i}
-              className={`ml-5 ${event.archived ? 'opacity-50' : ''}`}
-            >
+            <li key={event.stableId ?? i} className={`ml-5 ${event.archived ? 'opacity-50' : ''}`}>
               <span
                 className={`absolute -left-2 mt-1 h-4 w-4 rounded-full border-2 border-[var(--background)] ${EVENT_COLORS[event.eventType]}`}
               />
@@ -127,20 +131,30 @@ export function EventTimeline({
                 {eventTrusts.get(event.stableId ?? `${event.actor}-${event.timestamp}`) && (
                   <span
                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${getEventTrustBadgeClass(
-                      eventTrusts.get(event.stableId ?? `${event.actor}-${event.timestamp}`)!.status,
+                      eventTrusts.get(event.stableId ?? `${event.actor}-${event.timestamp}`)!
+                        .status,
                     )}`}
                     title={`Actor trust ${eventTrusts.get(event.stableId ?? `${event.actor}-${event.timestamp}`)!.eventTrustWeight}%`}
                   >
                     {eventTrusts.get(event.stableId ?? `${event.actor}-${event.timestamp}`)!.status}
-                    <span className="font-semibold">{eventTrusts.get(event.stableId ?? `${event.actor}-${event.timestamp}`)!.eventTrustWeight}%</span>
+                    <span className="font-semibold">
+                      {
+                        eventTrusts.get(event.stableId ?? `${event.actor}-${event.timestamp}`)!
+                          .eventTrustWeight
+                      }
+                      %
+                    </span>
                   </span>
                 )}
               </div>
-              {(event as TrackingEvent & { privateMetadata?: boolean; metadataCommitment?: string }).privateMetadata &&
+              {(event as TrackingEvent & { privateMetadata?: boolean; metadataCommitment?: string })
+                .privateMetadata &&
               (event as TrackingEvent & { metadataCommitment?: string }).metadataCommitment ? (
                 <div className="mt-2">
                   <PrivateMetadataViewer
-                    commitment={(event as TrackingEvent & { metadataCommitment?: string }).metadataCommitment!}
+                    commitment={
+                      (event as TrackingEvent & { metadataCommitment?: string }).metadataCommitment!
+                    }
                     authorized={false}
                   />
                 </div>

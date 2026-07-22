@@ -238,9 +238,11 @@ describe('Webhook Subscriptions', () => {
       });
 
       expect(payload.event.type).toBe('PRODUCT_EVENT_CHANGED');
-      expect(payload.event.data.eventType).toBe('product_updated');
-      expect(payload.event.data.productId).toBe('prod-123');
-      expect(payload.event.data.details.name).toBe('Updated Product');
+      if (payload.event.type === 'PRODUCT_EVENT_CHANGED') {
+        expect(payload.event.data.eventType).toBe('product_updated');
+        expect(payload.event.data.productId).toBe('prod-123');
+        expect(payload.event.data.details.name).toBe('Updated Product');
+      }
       expect(payload.id).toBeDefined();
       expect(payload.timestamp).toBeDefined();
     });
@@ -258,8 +260,10 @@ describe('Webhook Subscriptions', () => {
       });
 
       expect(payload.event.type).toBe('PRODUCT_EVENT_CHANGED');
-      expect(payload.event.data.eventType).toBe('event_added');
-      expect(payload.event.data.details.event).toEqual(eventData);
+      if (payload.event.type === 'PRODUCT_EVENT_CHANGED') {
+        expect(payload.event.data.eventType).toBe('event_added');
+        expect(payload.event.data.details.event).toEqual(eventData);
+      }
     });
   });
 
@@ -274,7 +278,7 @@ describe('Webhook Subscriptions', () => {
       const updated = await updateSubscriptionTrigger(subscription.id);
       expect(updated).toBeDefined();
       expect(updated?.lastTriggeredAt).toBeDefined();
-      expect(updated.lastTriggeredAt).toBeGreaterThan(0);
+      expect(updated?.lastTriggeredAt).toBeGreaterThan(0);
     });
 
     it('should update trigger timestamp multiple times', async () => {

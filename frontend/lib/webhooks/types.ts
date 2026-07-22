@@ -103,6 +103,8 @@ export interface WebhookDeliveryAttempt {
   nextRetryAt?: number;
   createdAt: number;
   updatedAt: number;
+  /** Serialized WebhookPayload, persisted so retries can replay the exact original payload. */
+  payloadData?: string;
 }
 
 /**

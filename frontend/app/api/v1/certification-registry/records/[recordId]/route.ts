@@ -31,44 +31,84 @@ export function OPTIONS(request: NextRequest) {
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { recordId: string } },
+  { params }: { params: Promise<{ recordId: string }> },
 ): Promise<NextResponse> {
   const start = Date.now();
+  const { recordId } = await params;
 
-  const limited = applyRateLimit(request, 'DELETE /api/v1/certification-registry/records/[recordId]', RATE_LIMIT_PRESETS.default);
-  if (limited) { recordRequest('DELETE /api/v1/certification-registry/records/[recordId]', 429, Date.now() - start); return limited; }
+  const limited = applyRateLimit(
+    request,
+    'DELETE /api/v1/certification-registry/records/[recordId]',
+    RATE_LIMIT_PRESETS.default,
+  );
+  if (limited) {
+    recordRequest(
+      'DELETE /api/v1/certification-registry/records/[recordId]',
+      429,
+      Date.now() - start,
+    );
+    return limited;
+  }
 
   const auth = await authenticateApiRequest(request, 'partner');
-  if (auth.error) { recordRequest('DELETE /api/v1/certification-registry/records/[recordId]', 401, Date.now() - start); return auth.error; }
+  if (auth.error) {
+    recordRequest(
+      'DELETE /api/v1/certification-registry/records/[recordId]',
+      401,
+      Date.now() - start,
+    );
+    return auth.error;
+  }
 
   let payload: unknown;
-  try { payload = await request.json(); } catch {
+  try {
+    payload = await request.json();
+  } catch {
     return withCors(request, apiError(request, 400, ErrorCode.INVALID_JSON, 'Invalid JSON body'));
   }
 
   const parsed = revokeSchema.safeParse(payload);
   if (!parsed.success) {
-    return withCors(request, apiError(request, 400, ErrorCode.VALIDATION_ERROR, parsed.error.issues[0]?.message ?? 'Validation error'));
+    return withCors(
+      request,
+      apiError(
+        request,
+        400,
+        ErrorCode.VALIDATION_ERROR,
+        parsed.error.issues[0]?.message ?? 'Validation error',
+      ),
+    );
   }
 
   const { productId, issuerAddress } = parsed.data;
-  const recordId = params.recordId;
 
   const raw = await kvStore.get(recordsKey(productId));
-  const records: CertificationRegistryRecord[] = raw ? (JSON.parse(raw) as CertificationRegistryRecord[]) : [];
+  const records: CertificationRegistryRecord[] = raw
+    ? (JSON.parse(raw) as CertificationRegistryRecord[])
+    : [];
 
   const idx = records.findIndex((r) => r.id === recordId);
   if (idx === -1) {
-    return withCors(request, apiError(request, 404, ErrorCode.NOT_FOUND, `Record '${recordId}' not found`));
+    return withCors(
+      request,
+      apiError(request, 404, ErrorCode.NOT_FOUND, `Record '${recordId}' not found`),
+    );
   }
 
   if (records[idx].issuerAddress !== issuerAddress) {
-    return withCors(request, apiError(request, 403, ErrorCode.FORBIDDEN, 'Only the issuer can revoke this record'));
+    return withCors(
+      request,
+      apiError(request, 403, ErrorCode.FORBIDDEN, 'Only the issuer can revoke this record'),
+    );
   }
 
   records[idx] = { ...records[idx], revoked: true, revokedAt: Date.now() };
   await kvStore.set(recordsKey(productId), JSON.stringify(records), TTL);
 
-  recordRequest('DELETE /api/v1/certification-registry/records/[recordId]', 200, Date.now() - start);
+  recordRequest(
+    'DELETE /api/v1/certification-registry/records/[recordId]',
+    200,
+    Date.now() - start,
+  );
   return withCors(request, withCorrelationId(request, NextResponse.json(true, { status: 200 })));
 }

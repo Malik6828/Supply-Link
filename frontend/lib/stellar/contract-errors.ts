@@ -182,11 +182,11 @@ export function extractContractErrorCode(error: unknown): ContractErrorCode | nu
     typeof e['code'] === 'number'
       ? e['code']
       : typeof (e['result'] as Record<string, unknown>)?.['code'] === 'number'
-        ? (e['result'] as Record<string, unknown>)['code']
+        ? ((e['result'] as Record<string, unknown>)['code'] as number)
         : null;
 
   if (code === null) return null;
-  return code in ERROR_MAP ? (code as ContractErrorCode) : null;
+  return (code as number) in ERROR_MAP ? (code as ContractErrorCode) : null;
 }
 
 /**

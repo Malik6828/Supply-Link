@@ -1,12 +1,13 @@
-"use client";
+'use client';
 
-import { useRef, useState } from "react";
-import Papa from "papaparse";
-import * as Dialog from "@radix-ui/react-dialog";
-import { useTranslations } from "next-intl";
-import { X, Upload, CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { registerProduct } from "@/lib/stellar/client";
-import { useStore } from "@/lib/state/store";
+import { useRef, useState } from 'react';
+import Papa from 'papaparse';
+import * as Dialog from '@radix-ui/react-dialog';
+import { useTranslations } from 'next-intl';
+import { X, Upload, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { registerProduct } from '@/lib/stellar/client';
+import { useStore } from '@/lib/state/store';
+import { useWalletAddress } from '@/lib/state/selectors/wallet';
 
 interface CsvRow {
   id: string;
@@ -14,7 +15,7 @@ interface CsvRow {
   origin: string;
 }
 
-type RowStatus = "pending" | "running" | "success" | "error";
+type RowStatus = 'pending' | 'running' | 'success' | 'error';
 
 interface RowResult extends CsvRow {
   status: RowStatus;
@@ -23,8 +24,10 @@ interface RowResult extends CsvRow {
 
 function validateRow(row: Record<string, string>, index: number): string | null {
   if (!row.id?.trim()) return `Row ${index + 1}: missing id`;
-  if (!row.name?.trim() || row.name.trim().length < 2) return `Row ${index + 1}: name must be ≥ 2 chars`;
-  if (!row.origin?.trim() || row.origin.trim().length < 2) return `Row ${index + 1}: origin must be ≥ 2 chars`;
+  if (!row.name?.trim() || row.name.trim().length < 2)
+    return `Row ${index + 1}: name must be ≥ 2 chars`;
+  if (!row.origin?.trim() || row.origin.trim().length < 2)
+    return `Row ${index + 1}: origin must be ≥ 2 chars`;
   return null;
 }
 
@@ -35,14 +38,15 @@ interface Props {
 
 export function BatchImportForm({ open, onOpenChange }: Props) {
   const t = useTranslations('batchImport');
-  const { walletAddress, addProduct } = useStore();
+  const walletAddress = useWalletAddress();
+  const addProduct = useStore((s) => s.addProduct);
   const fileRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<RowResult[]>([]);
   const [parseError, setParseError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [done, setDone] = useState(false);
 
-  const processed = rows.filter((r) => r.status === "success" || r.status === "error").length;
+  const processed = rows.filter((r) => r.status === 'success' || r.status === 'error').length;
   const progress = rows.length > 0 ? Math.round((processed / rows.length) * 100) : 0;
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -60,10 +64,10 @@ export function BatchImportForm({ open, onOpenChange }: Props) {
           const err = validateRow(raw, i);
           if (err) validationErrors.push(err);
           return {
-            id: raw.id?.trim() ?? "",
-            name: raw.name?.trim() ?? "",
-            origin: raw.origin?.trim() ?? "",
-            status: err ? "error" : "pending",
+            id: raw.id?.trim() ?? '',
+            name: raw.name?.trim() ?? '',
+            origin: raw.origin?.trim() ?? '',
+            status: err ? 'error' : 'pending',
             error: err ?? undefined,
           };
         });
@@ -85,14 +89,12 @@ export function BatchImportForm({ open, onOpenChange }: Props) {
     setRunning(true);
 
     for (let i = 0; i < rows.length; i++) {
-      if (rows[i].status !== "pending") continue;
+      if (rows[i].status !== 'pending') continue;
 
-      setRows((prev) =>
-        prev.map((r, idx) => (idx === i ? { ...r, status: "running" } : r))
-      );
+      setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, status: 'running' } : r)));
 
       try {
-        await registerProduct(rows[i].id, rows[i].name, rows[i].origin, "", walletAddress);
+        await registerProduct(rows[i].id, rows[i].name, rows[i].origin, '', walletAddress);
         addProduct({
           id: rows[i].id,
           name: rows[i].name,
@@ -102,16 +104,18 @@ export function BatchImportForm({ open, onOpenChange }: Props) {
           active: true,
           authorizedActors: [walletAddress],
         });
-        setRows((prev) =>
-          prev.map((r, idx) => (idx === i ? { ...r, status: "success" } : r))
-        );
+        setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, status: 'success' } : r)));
       } catch (err) {
         setRows((prev) =>
           prev.map((r, idx) =>
             idx === i
-              ? { ...r, status: "error", error: err instanceof Error ? err.message : "Unknown error" }
-              : r
-          )
+              ? {
+                  ...r,
+                  status: 'error',
+                  error: err instanceof Error ? err.message : 'Unknown error',
+                }
+              : r,
+          ),
         );
       }
     }
@@ -125,12 +129,12 @@ export function BatchImportForm({ open, onOpenChange }: Props) {
       setRows([]);
       setParseError(null);
       setDone(false);
-      if (fileRef.current) fileRef.current.value = "";
+      if (fileRef.current) fileRef.current.value = '';
       onOpenChange(open);
     }
   }
 
-  const pendingCount = rows.filter((r) => r.status === "pending").length;
+  const pendingCount = rows.filter((r) => r.status === 'pending').length;
   const canSubmit = !running && pendingCount > 0 && !!walletAddress;
 
   return (
@@ -149,7 +153,10 @@ export function BatchImportForm({ open, onOpenChange }: Props) {
           </div>
 
           <p className="text-sm text-[var(--muted)]">
-            {t('instructions')} <code className="font-mono text-xs bg-[var(--muted-bg)] px-1 py-0.5 rounded">id, name, origin</code>
+            {t('instructions')}{' '}
+            <code className="font-mono text-xs bg-[var(--muted-bg)] px-1 py-0.5 rounded">
+              id, name, origin
+            </code>
           </p>
 
           {/* File input */}
@@ -166,15 +173,15 @@ export function BatchImportForm({ open, onOpenChange }: Props) {
             />
           </label>
 
-          {parseError && (
-            <p className="text-sm text-red-500">{parseError}</p>
-          )}
+          {parseError && <p className="text-sm text-red-500">{parseError}</p>}
 
           {/* Progress bar */}
           {rows.length > 0 && (
             <div className="flex flex-col gap-1">
               <div className="flex justify-between text-xs text-[var(--muted)]">
-                <span>{processed} / {rows.length} processed</span>
+                <span>
+                  {processed} / {rows.length} processed
+                </span>
                 <span>{progress}%</span>
               </div>
               <div className="h-2 rounded-full bg-[var(--muted-bg)] overflow-hidden">
@@ -190,17 +197,28 @@ export function BatchImportForm({ open, onOpenChange }: Props) {
           {rows.length > 0 && (
             <ul className="flex flex-col gap-1 max-h-56 overflow-y-auto text-sm">
               {rows.map((row, i) => (
-                <li key={i} className="flex items-start gap-2 py-1 border-b border-[var(--card-border)] last:border-0">
+                <li
+                  key={i}
+                  className="flex items-start gap-2 py-1 border-b border-[var(--card-border)] last:border-0"
+                >
                   <span className="mt-0.5 shrink-0">
-                    {row.status === "success" && <CheckCircle size={15} className="text-green-500" />}
-                    {row.status === "error" && <XCircle size={15} className="text-red-500" />}
-                    {row.status === "running" && <Loader2 size={15} className="text-violet-500 animate-spin" />}
-                    {row.status === "pending" && <span className="inline-block w-[15px] h-[15px] rounded-full border border-[var(--muted)]" />}
+                    {row.status === 'success' && (
+                      <CheckCircle size={15} className="text-green-500" />
+                    )}
+                    {row.status === 'error' && <XCircle size={15} className="text-red-500" />}
+                    {row.status === 'running' && (
+                      <Loader2 size={15} className="text-violet-500 animate-spin" />
+                    )}
+                    {row.status === 'pending' && (
+                      <span className="inline-block w-[15px] h-[15px] rounded-full border border-[var(--muted)]" />
+                    )}
                   </span>
                   <span className="flex-1 min-w-0">
                     <span className="font-medium">{row.name}</span>
                     <span className="text-[var(--muted)] ml-1 font-mono text-xs">({row.id})</span>
-                    {row.error && <span className="block text-xs text-red-500 truncate">{row.error}</span>}
+                    {row.error && (
+                      <span className="block text-xs text-red-500 truncate">{row.error}</span>
+                    )}
                   </span>
                 </li>
               ))}

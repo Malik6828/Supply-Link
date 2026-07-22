@@ -6,6 +6,8 @@
  * scope, and an immutable audit trail.
  */
 
+import { createCollection } from '@/lib/store';
+
 export type RegulatorCertStatus = 'active' | 'revoked' | 'expired';
 
 export interface RegulatorCertification {
@@ -47,9 +49,12 @@ export interface IssueCertParams {
   validityDays?: number;
 }
 
-// ── In-memory store (replace with DB / on-chain storage in production) ─────────
+// ── Persistent store (shared KV repository) ───────────────────────────────────
+// Records survive across serverless invocations when a KV backend is
+// configured, falling back to the shared in-memory backend in dev/test. In
+// production this would additionally be reconciled with on-chain storage.
 
-const certStore = new Map<string, RegulatorCertification>();
+const certStore = createCollection<RegulatorCertification>('regulator-cert');
 
 function generateId(): string {
   return `rcert-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -109,12 +114,12 @@ export function getCertification(id: string): RegulatorCertification | null {
 }
 
 export function listCertifications(productId?: string): RegulatorCertification[] {
-  const all = Array.from(certStore.values());
+  const all = certStore.all();
   return productId ? all.filter((c) => c.productId === productId) : all;
 }
 
 export function listByIssuer(issuerAddress: string): RegulatorCertification[] {
-  return Array.from(certStore.values()).filter((c) => c.issuerAddress === issuerAddress);
+  return certStore.all().filter((c) => c.issuerAddress === issuerAddress);
 }
 
 /** Resolve effective status (auto-expire based on current time). */

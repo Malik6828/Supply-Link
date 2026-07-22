@@ -6,6 +6,7 @@ import { CONTRACT_ID } from '@/lib/stellar/client';
 import { EventTimeline } from '@/components/products/EventTimeline';
 import { RatingWidget } from '@/components/tracking/RatingWidget';
 import ProductQRCode from '@/components/products/ProductQRCode';
+import { type QrProofPayload } from '@/lib/services/offlineVerify';
 import { ScanQRButton } from '@/components/tracking/ScanQRButton';
 import { ShareButton } from '@/components/ui/ShareButton';
 import { ProvenanceScoreGauge } from '@/components/products/ProvenanceScoreGauge';

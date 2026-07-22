@@ -2,29 +2,29 @@ import { describe, it, expect } from 'vitest';
 import { extractFeatures, scoreFraud } from '../mlFraudScorer';
 
 const cleanEvents = [
-  { event_type: 'HARVEST', timestamp: 0, actor: 'alice', location: 'farm' },
-  { event_type: 'PROCESSING', timestamp: 7200, actor: 'bob', location: 'factory' },
-  { event_type: 'SHIPPING', timestamp: 90000, actor: 'carol', location: 'port' },
-  { event_type: 'RETAIL', timestamp: 200000, actor: 'dave', location: 'warehouse' },
+  { eventType: 'HARVEST', timestamp: 0, actor: 'alice', location: 'farm' },
+  { eventType: 'PROCESSING', timestamp: 7200, actor: 'bob', location: 'factory' },
+  { eventType: 'SHIPPING', timestamp: 90000, actor: 'carol', location: 'port' },
+  { eventType: 'RETAIL', timestamp: 200000, actor: 'dave', location: 'warehouse' },
 ];
 
 const suspiciousEvents = [
-  { event_type: 'HARVEST', timestamp: 0, actor: 'eve', location: 'farm' },
-  { event_type: 'RETAIL', timestamp: 10, actor: 'eve', location: 'warehouse' }, // skips everything, 10s
+  { eventType: 'HARVEST', timestamp: 0, actor: 'eve', location: 'farm' },
+  { eventType: 'RETAIL', timestamp: 10, actor: 'eve', location: 'warehouse' }, // skips everything, 10s
 ];
 
 describe('extractFeatures', () => {
   it('returns Infinity for single event', () => {
-    const f = extractFeatures([{ event_type: 'HARVEST', timestamp: 1000 }]);
+    const f = extractFeatures([{ eventType: 'HARVEST', timestamp: 1000 }]);
     expect(f.avgTimeBetweenEvents).toBe(Infinity);
     expect(f.minTimeBetweenEvents).toBe(Infinity);
   });
 
   it('computes correct avgTimeBetweenEvents', () => {
     const events = [
-      { event_type: 'HARVEST', timestamp: 0 },
-      { event_type: 'PROCESSING', timestamp: 100 },
-      { event_type: 'SHIPPING', timestamp: 300 },
+      { eventType: 'HARVEST', timestamp: 0 },
+      { eventType: 'PROCESSING', timestamp: 100 },
+      { eventType: 'SHIPPING', timestamp: 300 },
     ];
     const f = extractFeatures(events);
     expect(f.avgTimeBetweenEvents).toBe(150); // (100 + 200) / 2
@@ -43,9 +43,9 @@ describe('extractFeatures', () => {
 
   it('computes stageProgressionScore < 1 for regression', () => {
     const events = [
-      { event_type: 'HARVEST', timestamp: 0 },
-      { event_type: 'SHIPPING', timestamp: 100 },
-      { event_type: 'PROCESSING', timestamp: 200 }, // regression
+      { eventType: 'HARVEST', timestamp: 0 },
+      { eventType: 'SHIPPING', timestamp: 100 },
+      { eventType: 'PROCESSING', timestamp: 200 }, // regression
     ];
     const f = extractFeatures(events);
     expect(f.stageProgressionScore).toBeLessThan(1);
@@ -53,8 +53,8 @@ describe('extractFeatures', () => {
 
   it('computes locationCoverageRatio correctly', () => {
     const events = [
-      { event_type: 'HARVEST', timestamp: 0, location: 'farm' },
-      { event_type: 'PROCESSING', timestamp: 100 },
+      { eventType: 'HARVEST', timestamp: 0, location: 'farm' },
+      { eventType: 'PROCESSING', timestamp: 100 },
     ];
     const f = extractFeatures(events);
     expect(f.locationCoverageRatio).toBe(0.5);
@@ -63,8 +63,8 @@ describe('extractFeatures', () => {
   it('counts rapid transitions correctly', () => {
     // HARVEST→PROCESSING minimum is 3600s; 10s < 3600
     const events = [
-      { event_type: 'HARVEST', timestamp: 0 },
-      { event_type: 'PROCESSING', timestamp: 10 },
+      { eventType: 'HARVEST', timestamp: 0 },
+      { eventType: 'PROCESSING', timestamp: 10 },
     ];
     const f = extractFeatures(events);
     expect(f.rapidTransitionCount).toBe(1);

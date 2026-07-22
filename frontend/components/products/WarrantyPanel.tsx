@@ -1,10 +1,26 @@
 'use client';
 
 import { useState } from 'react';
-import { Shield, ShieldOff, ShieldCheck, ChevronDown, ChevronUp, Plus, Loader2, ExternalLink, Clock, AlertTriangle } from 'lucide-react';
+import {
+  Shield,
+  ShieldOff,
+  ShieldCheck,
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  Loader2,
+  ExternalLink,
+  Clock,
+  AlertTriangle,
+} from 'lucide-react';
 import type { WarrantyInfo, WarrantyClaim, ClaimStatus } from '@/lib/types';
-import { registerWarranty, fileWarrantyClaim, updateClaimStatus, voidWarranty } from '@/lib/stellar/client';
-import { useStore } from '@/lib/state/store';
+import {
+  registerWarranty,
+  fileWarrantyClaim,
+  updateClaimStatus,
+  voidWarranty,
+} from '@/lib/stellar/client';
+import { useWalletAddress } from '@/lib/state/selectors/wallet';
 import { useToast } from '@/lib/hooks/useToast';
 
 interface Props {
@@ -19,7 +35,9 @@ interface Props {
 
 function fmtDate(ts: number) {
   return new Date(ts).toLocaleDateString(undefined, {
-    year: 'numeric', month: 'short', day: 'numeric',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
   });
 }
 
@@ -48,7 +66,7 @@ function expiryDate(warranty: WarrantyInfo, productTimestamp: number): string | 
 }
 
 const STATUS_CONFIG: Record<ClaimStatus, { label: string; className: string }> = {
-  Pending:  { label: 'Pending',  className: 'bg-amber-500/10 text-amber-600' },
+  Pending: { label: 'Pending', className: 'bg-amber-500/10 text-amber-600' },
   Approved: { label: 'Approved', className: 'bg-blue-500/10 text-blue-600' },
   Rejected: { label: 'Rejected', className: 'bg-red-500/10 text-red-500' },
   Resolved: { label: 'Resolved', className: 'bg-green-500/10 text-green-600' },
@@ -56,7 +74,13 @@ const STATUS_CONFIG: Record<ClaimStatus, { label: string; className: string }> =
 
 // ── Warranty status badge ─────────────────────────────────────────────────────
 
-function WarrantyStatusBadge({ warranty, productTimestamp }: { warranty: WarrantyInfo; productTimestamp: number }) {
+function WarrantyStatusBadge({
+  warranty,
+  productTimestamp,
+}: {
+  warranty: WarrantyInfo;
+  productTimestamp: number;
+}) {
   if (warranty.voided) {
     return (
       <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-[var(--muted-bg)] text-[var(--muted)] font-medium">
@@ -87,7 +111,7 @@ interface RegisterWarrantyFormProps {
 }
 
 function RegisterWarrantyForm({ productId, onSuccess, onCancel }: RegisterWarrantyFormProps) {
-  const { walletAddress } = useStore();
+  const walletAddress = useWalletAddress();
   const toast = useToast();
   const [durationYears, setDurationYears] = useState('1');
   const [isLifetime, setIsLifetime] = useState(false);
@@ -130,38 +154,82 @@ function RegisterWarrantyForm({ productId, onSuccess, onCancel }: RegisterWarran
     <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3">
       <div className="flex items-center gap-3">
         <label className="flex items-center gap-2 cursor-pointer text-sm">
-          <input type="checkbox" checked={isLifetime} onChange={(e) => setIsLifetime(e.target.checked)} className="w-4 h-4 accent-violet-600" />
+          <input
+            type="checkbox"
+            checked={isLifetime}
+            onChange={(e) => setIsLifetime(e.target.checked)}
+            className="w-4 h-4 accent-violet-600"
+          />
           Lifetime warranty
         </label>
       </div>
       {!isLifetime && (
         <div className="flex flex-col gap-1">
-          <label htmlFor="warranty-duration" className="text-xs font-medium">Duration (years)</label>
-          <input id="warranty-duration" type="number" min="1" max="99" value={durationYears}
+          <label htmlFor="warranty-duration" className="text-xs font-medium">
+            Duration (years)
+          </label>
+          <input
+            id="warranty-duration"
+            type="number"
+            min="1"
+            max="99"
+            value={durationYears}
             onChange={(e) => setDurationYears(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-[var(--card-border)] bg-[var(--card)] text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 w-32" />
+            className="px-3 py-2 rounded-lg border border-[var(--card-border)] bg-[var(--card)] text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 w-32"
+          />
         </div>
       )}
       <div className="flex flex-col gap-1">
-        <label htmlFor="warranty-terms" className="text-xs font-medium">Terms <span className="text-[var(--muted)] font-normal">(optional)</span></label>
-        <textarea id="warranty-terms" value={terms} onChange={(e) => setTerms(e.target.value)}
-          rows={2} maxLength={1024} placeholder="Short warranty terms summary…"
-          className="px-3 py-2 rounded-lg border border-[var(--card-border)] bg-[var(--card)] text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none" />
+        <label htmlFor="warranty-terms" className="text-xs font-medium">
+          Terms <span className="text-[var(--muted)] font-normal">(optional)</span>
+        </label>
+        <textarea
+          id="warranty-terms"
+          value={terms}
+          onChange={(e) => setTerms(e.target.value)}
+          rows={2}
+          maxLength={1024}
+          placeholder="Short warranty terms summary…"
+          className="px-3 py-2 rounded-lg border border-[var(--card-border)] bg-[var(--card)] text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+        />
       </div>
       <div className="flex flex-col gap-1">
-        <label htmlFor="warranty-ref" className="text-xs font-medium">Document reference <span className="text-[var(--muted)] font-normal">(IPFS CID or URL, optional)</span></label>
-        <input id="warranty-ref" type="text" value={termsRef} onChange={(e) => setTermsRef(e.target.value)}
-          maxLength={512} placeholder="ipfs://Qm… or https://…"
-          className="px-3 py-2 rounded-lg border border-[var(--card-border)] bg-[var(--card)] text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+        <label htmlFor="warranty-ref" className="text-xs font-medium">
+          Document reference{' '}
+          <span className="text-[var(--muted)] font-normal">(IPFS CID or URL, optional)</span>
+        </label>
+        <input
+          id="warranty-ref"
+          type="text"
+          value={termsRef}
+          onChange={(e) => setTermsRef(e.target.value)}
+          maxLength={512}
+          placeholder="ipfs://Qm… or https://…"
+          className="px-3 py-2 rounded-lg border border-[var(--card-border)] bg-[var(--card)] text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+        />
       </div>
       <div className="flex gap-2">
-        <button type="button" onClick={onCancel} disabled={pending}
-          className="flex-1 px-3 py-2 rounded-lg border border-[var(--card-border)] text-sm font-medium hover:bg-[var(--muted-bg)] transition-colors disabled:opacity-50">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={pending}
+          className="flex-1 px-3 py-2 rounded-lg border border-[var(--card-border)] text-sm font-medium hover:bg-[var(--muted-bg)] transition-colors disabled:opacity-50"
+        >
           Cancel
         </button>
-        <button type="submit" disabled={pending}
-          className="flex-1 px-3 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-          {pending ? <><Loader2 size={14} className="animate-spin" aria-hidden />Saving…</> : 'Register Warranty'}
+        <button
+          type="submit"
+          disabled={pending}
+          className="flex-1 px-3 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {pending ? (
+            <>
+              <Loader2 size={14} className="animate-spin" aria-hidden />
+              Saving…
+            </>
+          ) : (
+            'Register Warranty'
+          )}
         </button>
       </div>
     </form>
@@ -177,7 +245,7 @@ interface FileClaimFormProps {
 }
 
 function FileClaimForm({ productId, onSuccess, onCancel }: FileClaimFormProps) {
-  const { walletAddress } = useStore();
+  const walletAddress = useWalletAddress();
   const toast = useToast();
   const [description, setDescription] = useState('');
   const [proofRef, setProofRef] = useState('');
@@ -221,28 +289,57 @@ function FileClaimForm({ productId, onSuccess, onCancel }: FileClaimFormProps) {
   return (
     <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3" data-testid="file-claim-form">
       <div className="flex flex-col gap-1">
-        <label htmlFor="claim-description" className="text-xs font-medium">Issue description</label>
-        <textarea id="claim-description" value={description} onChange={(e) => setDescription(e.target.value)}
-          rows={3} maxLength={4096} required placeholder="Describe the defect or issue…"
+        <label htmlFor="claim-description" className="text-xs font-medium">
+          Issue description
+        </label>
+        <textarea
+          id="claim-description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={3}
+          maxLength={4096}
+          required
+          placeholder="Describe the defect or issue…"
           className="px-3 py-2 rounded-lg border border-[var(--card-border)] bg-[var(--card)] text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
-          data-testid="warranty-claim-description-input" />
+        />
       </div>
       <div className="flex flex-col gap-1">
-        <label htmlFor="claim-proof" className="text-xs font-medium">Proof reference <span className="text-[var(--muted)] font-normal">(IPFS CID or URL, optional)</span></label>
-        <input id="claim-proof" type="text" value={proofRef} onChange={(e) => setProofRef(e.target.value)}
-          maxLength={512} placeholder="ipfs://Qm… or https://…"
+        <label htmlFor="claim-proof" className="text-xs font-medium">
+          Proof reference{' '}
+          <span className="text-[var(--muted)] font-normal">(IPFS CID or URL, optional)</span>
+        </label>
+        <input
+          id="claim-proof"
+          type="text"
+          value={proofRef}
+          onChange={(e) => setProofRef(e.target.value)}
+          maxLength={512}
+          placeholder="ipfs://Qm… or https://…"
           className="px-3 py-2 rounded-lg border border-[var(--card-border)] bg-[var(--card)] text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-          data-testid="warranty-claim-proof-input" />
+        />
       </div>
       <div className="flex gap-2">
-        <button type="button" onClick={onCancel} disabled={pending}
-          className="flex-1 px-3 py-2 rounded-lg border border-[var(--card-border)] text-sm font-medium hover:bg-[var(--muted-bg)] transition-colors disabled:opacity-50">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={pending}
+          className="flex-1 px-3 py-2 rounded-lg border border-[var(--card-border)] text-sm font-medium hover:bg-[var(--muted-bg)] transition-colors disabled:opacity-50"
+        >
           Cancel
         </button>
-        <button type="submit" disabled={pending}
+        <button
+          type="submit"
+          disabled={pending}
           className="flex-1 px-3 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-          data-testid="warranty-claim-submit-btn">
-          {pending ? <><Loader2 size={14} className="animate-spin" aria-hidden />Filing…</> : 'File Claim'}
+        >
+          {pending ? (
+            <>
+              <Loader2 size={14} className="animate-spin" aria-hidden />
+              Filing…
+            </>
+          ) : (
+            'File Claim'
+          )}
         </button>
       </div>
     </form>
@@ -259,7 +356,7 @@ interface ClaimsListProps {
 }
 
 function ClaimsList({ claims, productId, isOwner, onStatusUpdate }: ClaimsListProps) {
-  const { walletAddress } = useStore();
+  const walletAddress = useWalletAddress();
   const toast = useToast();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
@@ -289,19 +386,28 @@ function ClaimsList({ claims, productId, isOwner, onStatusUpdate }: ClaimsListPr
       {claims.map((claim) => {
         const cfg = STATUS_CONFIG[claim.status];
         return (
-          <li key={claim.claimId} className="border border-[var(--card-border)] rounded-lg p-3 text-sm"
-              data-testid="warranty-claim-item" data-claim-id={claim.claimId} data-claim-status={claim.status}>
+          <li
+            key={claim.claimId}
+            className="border border-[var(--card-border)] rounded-lg p-3 text-sm"
+          >
             <div className="flex items-start justify-between gap-2 mb-1">
-              <span className="font-mono text-xs text-[var(--muted)] truncate">{claim.claimId}</span>
-              <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${cfg.className}`}
-                    data-testid="warranty-claim-status">
+              <span className="font-mono text-xs text-[var(--muted)] truncate">
+                {claim.claimId}
+              </span>
+              <span
+                className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${cfg.className}`}
+              >
                 {cfg.label}
               </span>
             </div>
             <p className="text-[var(--foreground)] mb-1" data-testid="warranty-claim-description">{claim.description}</p>
             {claim.proofRef && (
-              <a href={claim.proofRef} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-violet-500 hover:underline mb-1">
+              <a
+                href={claim.proofRef}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-violet-500 hover:underline mb-1"
+              >
                 <ExternalLink size={11} aria-hidden /> View proof
               </a>
             )}
@@ -311,10 +417,13 @@ function ClaimsList({ claims, productId, isOwner, onStatusUpdate }: ClaimsListPr
             {isOwner && claim.status === 'Pending' && (
               <div className="flex gap-2 mt-2" data-testid="claim-action-buttons">
                 {(['Approved', 'Rejected', 'Resolved'] as ClaimStatus[]).map((s) => (
-                  <button key={s} type="button" disabled={updatingId === claim.claimId}
+                  <button
+                    key={s}
+                    type="button"
+                    disabled={updatingId === claim.claimId}
                     onClick={() => handleStatusChange(claim.claimId, s)}
                     className="px-2 py-1 rounded text-xs border border-[var(--card-border)] hover:bg-[var(--muted-bg)] transition-colors disabled:opacity-50"
-                    data-testid={`claim-action-${s.toLowerCase()}`}>
+                  >
                     {s}
                   </button>
                 ))}
@@ -342,7 +451,7 @@ export function WarrantyPanel({
   const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [showClaimForm, setShowClaimForm] = useState(false);
   const [voidingPending, setVoidingPending] = useState(false);
-  const { walletAddress } = useStore();
+  const walletAddress = useWalletAddress();
   const toast = useToast();
 
   const active = warranty ? isActive(warranty, productTimestamp) : false;
@@ -374,15 +483,24 @@ export function WarrantyPanel({
   return (
     <div data-testid="warranty-panel">
       {/* Header */}
-      <button type="button" onClick={() => setExpanded((v) => !v)}
-        className="flex items-center justify-between w-full text-left" aria-expanded={expanded}
-        data-testid="warranty-panel-toggle">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex items-center justify-between w-full text-left"
+        aria-expanded={expanded}
+      >
         <div className="flex items-center gap-2">
           <Shield size={16} className="text-violet-500" aria-hidden />
           <span className="text-sm font-medium text-[var(--foreground)]">Warranty</span>
-          {warranty && <WarrantyStatusBadge warranty={warranty} productTimestamp={productTimestamp} />}
+          {warranty && (
+            <WarrantyStatusBadge warranty={warranty} productTimestamp={productTimestamp} />
+          )}
         </div>
-        {expanded ? <ChevronUp size={16} className="text-[var(--muted)]" aria-hidden /> : <ChevronDown size={16} className="text-[var(--muted)]" aria-hidden />}
+        {expanded ? (
+          <ChevronUp size={16} className="text-[var(--muted)]" aria-hidden />
+        ) : (
+          <ChevronDown size={16} className="text-[var(--muted)]" aria-hidden />
+        )}
       </button>
 
       {expanded && (
@@ -411,7 +529,9 @@ export function WarrantyPanel({
                 {warranty.voided && (
                   <div>
                     <dt className="text-xs text-[var(--muted)]">Voided</dt>
-                    <dd className="font-medium mt-0.5 text-[var(--muted)]">{fmtDate(warranty.voidedAt)}</dd>
+                    <dd className="font-medium mt-0.5 text-[var(--muted)]">
+                      {fmtDate(warranty.voidedAt)}
+                    </dd>
                   </div>
                 )}
                 {warranty.terms && (
@@ -424,8 +544,12 @@ export function WarrantyPanel({
                   <div className="sm:col-span-2">
                     <dt className="text-xs text-[var(--muted)]">Document</dt>
                     <dd className="mt-0.5">
-                      <a href={warranty.termsRef} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-violet-500 hover:underline">
+                      <a
+                        href={warranty.termsRef}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-violet-500 hover:underline"
+                      >
                         <ExternalLink size={11} aria-hidden /> {warranty.termsRef}
                       </a>
                     </dd>
@@ -435,9 +559,17 @@ export function WarrantyPanel({
 
               {/* Owner actions */}
               {isOwner && !warranty.voided && (
-                <button type="button" onClick={handleVoid} disabled={voidingPending}
-                  className="flex items-center gap-1.5 text-xs text-red-500 hover:underline disabled:opacity-50">
-                  {voidingPending ? <Loader2 size={12} className="animate-spin" aria-hidden /> : <ShieldOff size={12} aria-hidden />}
+                <button
+                  type="button"
+                  onClick={handleVoid}
+                  disabled={voidingPending}
+                  className="flex items-center gap-1.5 text-xs text-red-500 hover:underline disabled:opacity-50"
+                >
+                  {voidingPending ? (
+                    <Loader2 size={12} className="animate-spin" aria-hidden />
+                  ) : (
+                    <ShieldOff size={12} aria-hidden />
+                  )}
                   Void warranty
                 </button>
               )}
@@ -449,35 +581,56 @@ export function WarrantyPanel({
                     Claims ({claims.length})
                   </h4>
                   {active && !showClaimForm && (
-                    <button type="button" onClick={() => setShowClaimForm(true)}
+                    <button
+                      type="button"
+                      onClick={() => setShowClaimForm(true)}
                       className="flex items-center gap-1 text-xs text-violet-500 hover:underline"
-                      data-testid="file-claim-btn">
+                    >
                       <Plus size={11} aria-hidden /> File claim
                     </button>
                   )}
                 </div>
                 {showClaimForm && (
-                  <FileClaimForm productId={productId}
-                    onSuccess={(c) => { setClaims((prev) => [...prev, c]); setShowClaimForm(false); }}
-                    onCancel={() => setShowClaimForm(false)} />
+                  <FileClaimForm
+                    productId={productId}
+                    onSuccess={(c) => {
+                      setClaims((prev) => [...prev, c]);
+                      setShowClaimForm(false);
+                    }}
+                    onCancel={() => setShowClaimForm(false)}
+                  />
                 )}
-                <ClaimsList claims={claims} productId={productId} isOwner={isOwner}
-                  onStatusUpdate={handleClaimStatusUpdate} />
+                <ClaimsList
+                  claims={claims}
+                  productId={productId}
+                  isOwner={isOwner}
+                  onStatusUpdate={handleClaimStatusUpdate}
+                />
               </div>
             </>
           ) : (
             <>
-              <p className="text-sm text-[var(--muted)]">No warranty registered for this product.</p>
+              <p className="text-sm text-[var(--muted)]">
+                No warranty registered for this product.
+              </p>
               {isOwner && !showRegisterForm && (
-                <button type="button" onClick={() => setShowRegisterForm(true)}
-                  className="flex items-center gap-1.5 text-xs text-violet-500 hover:underline">
+                <button
+                  type="button"
+                  onClick={() => setShowRegisterForm(true)}
+                  className="flex items-center gap-1.5 text-xs text-violet-500 hover:underline"
+                >
                   <Plus size={12} aria-hidden /> Register warranty
                 </button>
               )}
               {showRegisterForm && (
-                <RegisterWarrantyForm productId={productId}
-                  onSuccess={(w) => { setWarranty(w); setShowRegisterForm(false); }}
-                  onCancel={() => setShowRegisterForm(false)} />
+                <RegisterWarrantyForm
+                  productId={productId}
+                  onSuccess={(w) => {
+                    setWarranty(w);
+                    setShowRegisterForm(false);
+                  }}
+                  onCancel={() => setShowRegisterForm(false)}
+                />
               )}
             </>
           )}

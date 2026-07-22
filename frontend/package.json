@@ -15,6 +15,7 @@
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:e2e:api": "playwright test --project=api",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
     "prepare": "husky",
@@ -65,6 +66,7 @@
     "@chromatic-com/storybook": "^3",
     "@eslint/eslintrc": "^1.4.1",
     "@next/bundle-analyzer": "^16.2.4",
+    "@playwright/test": "^1.51.1",
     "@storybook/addon-a11y": "^8",
     "@storybook/addon-essentials": "^8",
     "@storybook/addon-interactions": "^8",
@@ -99,7 +101,9 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
   },
   "lint-staged": {
     "**/*.{ts,tsx,json,css,md}": [

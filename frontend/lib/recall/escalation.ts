@@ -5,6 +5,8 @@
  * triggers for product recall events.
  */
 
+import { createCollection } from '@/lib/store';
+
 export type RecallPriority = 'low' | 'medium' | 'high' | 'critical';
 
 export type EscalationStage =
@@ -92,9 +94,11 @@ export const STAGE_LABELS: Record<EscalationStage, string> = {
   resolved: 'Resolved',
 };
 
-// ── In-memory store (replace with DB in production) ───────────────────────────
+// ── Persistent store (shared KV repository) ───────────────────────────────────
+// Records survive across serverless invocations when a KV backend is
+// configured, falling back to the shared in-memory backend in dev/test.
 
-const escalationStore = new Map<string, RecallEscalation>();
+const escalationStore = createCollection<RecallEscalation>('recall-escalation');
 
 export function createEscalation(params: {
   productId: string;
@@ -150,7 +154,7 @@ export function getEscalation(id: string): RecallEscalation | null {
 }
 
 export function listEscalations(productId?: string): RecallEscalation[] {
-  const all = Array.from(escalationStore.values());
+  const all = escalationStore.all();
   return productId ? all.filter((e) => e.productId === productId) : all;
 }
 

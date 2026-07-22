@@ -12,7 +12,11 @@ import { applyRateLimit, RATE_LIMIT_PRESETS } from '@/lib/api/rateLimit';
 import { authenticateApiRequest } from '@/lib/api/auth';
 import { recordRequest } from '@/lib/api/metrics';
 import { kvStore } from '@/lib/kv';
-import type { CertificationIssuer, CertificationRegistryRecord, CertificationVerificationResult } from '@/lib/types';
+import type {
+  CertificationIssuer,
+  CertificationRegistryRecord,
+  CertificationVerificationResult,
+} from '@/lib/types';
 
 export const runtime = 'nodejs';
 
@@ -30,27 +34,54 @@ export function OPTIONS(request: NextRequest) {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { recordId: string } },
+  { params }: { params: Promise<{ recordId: string }> },
 ): Promise<NextResponse> {
   const start = Date.now();
+  const { recordId } = await params;
 
-  const limited = applyRateLimit(request, 'GET /api/v1/certification-registry/records/[recordId]/verify', RATE_LIMIT_PRESETS.default);
-  if (limited) { recordRequest('GET /api/v1/certification-registry/records/[recordId]/verify', 429, Date.now() - start); return limited; }
+  const limited = applyRateLimit(
+    request,
+    'GET /api/v1/certification-registry/records/[recordId]/verify',
+    RATE_LIMIT_PRESETS.default,
+  );
+  if (limited) {
+    recordRequest(
+      'GET /api/v1/certification-registry/records/[recordId]/verify',
+      429,
+      Date.now() - start,
+    );
+    return limited;
+  }
 
   const auth = await authenticateApiRequest(request, 'partner');
-  if (auth.error) { recordRequest('GET /api/v1/certification-registry/records/[recordId]/verify', 401, Date.now() - start); return auth.error; }
+  if (auth.error) {
+    recordRequest(
+      'GET /api/v1/certification-registry/records/[recordId]/verify',
+      401,
+      Date.now() - start,
+    );
+    return auth.error;
+  }
 
   const productId = request.nextUrl.searchParams.get('productId');
   if (!productId) {
-    return withCors(request, apiError(request, 400, ErrorCode.MISSING_FIELDS, 'productId is required'));
+    return withCors(
+      request,
+      apiError(request, 400, ErrorCode.MISSING_FIELDS, 'productId is required'),
+    );
   }
 
   const raw = await kvStore.get(recordsKey(productId));
-  const records: CertificationRegistryRecord[] = raw ? (JSON.parse(raw) as CertificationRegistryRecord[]) : [];
+  const records: CertificationRegistryRecord[] = raw
+    ? (JSON.parse(raw) as CertificationRegistryRecord[])
+    : [];
 
-  const record = records.find((r) => r.id === params.recordId);
+  const record = records.find((r) => r.id === recordId);
   if (!record) {
-    return withCors(request, apiError(request, 404, ErrorCode.NOT_FOUND, `Record '${params.recordId}' not found`));
+    return withCors(
+      request,
+      apiError(request, 404, ErrorCode.NOT_FOUND, `Record '${recordId}' not found`),
+    );
   }
 
   // Fetch issuer for enriched response
@@ -66,6 +97,10 @@ export async function GET(
     issuer,
   };
 
-  recordRequest('GET /api/v1/certification-registry/records/[recordId]/verify', 200, Date.now() - start);
+  recordRequest(
+    'GET /api/v1/certification-registry/records/[recordId]/verify',
+    200,
+    Date.now() - start,
+  );
   return withCors(request, withCorrelationId(request, NextResponse.json(result, { status: 200 })));
 }

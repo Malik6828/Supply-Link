@@ -10,10 +10,10 @@ describe('detectSuspiciousPatterns', () => {
 
   it('returns no patterns for a clean linear chain', () => {
     const events = [
-      { event_type: 'HARVEST', timestamp: 1000, actor: 'alice' },
-      { event_type: 'PROCESSING', timestamp: 10000, actor: 'bob' },
-      { event_type: 'SHIPPING', timestamp: 100000, actor: 'carol' },
-      { event_type: 'RETAIL', timestamp: 200000, actor: 'dave' },
+      { eventType: 'HARVEST', timestamp: 1000, actor: 'alice' },
+      { eventType: 'PROCESSING', timestamp: 10000, actor: 'bob' },
+      { eventType: 'SHIPPING', timestamp: 100000, actor: 'carol' },
+      { eventType: 'RETAIL', timestamp: 200000, actor: 'dave' },
     ];
     const result = detectSuspiciousPatterns('prod-1', events);
     expect(result.patternsDetected).toBe(0);
@@ -21,8 +21,8 @@ describe('detectSuspiciousPatterns', () => {
 
   it('detects duplicate events', () => {
     const events = [
-      { event_type: 'HARVEST', timestamp: 1000 },
-      { event_type: 'HARVEST', timestamp: 1000 }, // exact duplicate
+      { eventType: 'HARVEST', timestamp: 1000 },
+      { eventType: 'HARVEST', timestamp: 1000 }, // exact duplicate
     ];
     const result = detectSuspiciousPatterns('prod-1', events);
     const dup = result.patterns.find((p) => p.type === 'duplicate_event');
@@ -32,9 +32,9 @@ describe('detectSuspiciousPatterns', () => {
 
   it('detects stage regression', () => {
     const events = [
-      { event_type: 'HARVEST', timestamp: 1000 },
-      { event_type: 'SHIPPING', timestamp: 5000 },
-      { event_type: 'PROCESSING', timestamp: 10000 }, // regression
+      { eventType: 'HARVEST', timestamp: 1000 },
+      { eventType: 'SHIPPING', timestamp: 5000 },
+      { eventType: 'PROCESSING', timestamp: 10000 }, // regression
     ];
     const result = detectSuspiciousPatterns('prod-1', events);
     const reg = result.patterns.find((p) => p.type === 'stage_regression');
@@ -44,8 +44,8 @@ describe('detectSuspiciousPatterns', () => {
 
   it('detects RETAIL without HARVEST as critical missing_stage', () => {
     const events = [
-      { event_type: 'SHIPPING', timestamp: 5000 },
-      { event_type: 'RETAIL', timestamp: 10000 },
+      { eventType: 'SHIPPING', timestamp: 5000 },
+      { eventType: 'RETAIL', timestamp: 10000 },
     ];
     const result = detectSuspiciousPatterns('prod-1', events);
     const missing = result.patterns.find(
@@ -57,8 +57,8 @@ describe('detectSuspiciousPatterns', () => {
 
   it('detects RETAIL without SHIPPING as high missing_stage', () => {
     const events = [
-      { event_type: 'HARVEST', timestamp: 1000 },
-      { event_type: 'RETAIL', timestamp: 5000 },
+      { eventType: 'HARVEST', timestamp: 1000 },
+      { eventType: 'RETAIL', timestamp: 5000 },
     ];
     const result = detectSuspiciousPatterns('prod-1', events);
     const missing = result.patterns.find(
@@ -69,9 +69,9 @@ describe('detectSuspiciousPatterns', () => {
 
   it('detects rapid cycling — same stage within threshold', () => {
     const events = [
-      { event_type: 'HARVEST', timestamp: 1000 },
-      { event_type: 'PROCESSING', timestamp: 5000 },
-      { event_type: 'PROCESSING', timestamp: 5010 }, // 10s apart — rapid cycling
+      { eventType: 'HARVEST', timestamp: 1000 },
+      { eventType: 'PROCESSING', timestamp: 5000 },
+      { eventType: 'PROCESSING', timestamp: 5010 }, // 10s apart — rapid cycling
     ];
     const result = detectSuspiciousPatterns('prod-1', events);
     const rapid = result.patterns.find((p) => p.type === 'rapid_cycling');
@@ -81,7 +81,7 @@ describe('detectSuspiciousPatterns', () => {
 
   it('flags actor_switch when many actors in one stage', () => {
     const events = Array.from({ length: 5 }, (_, i) => ({
-      event_type: 'HARVEST',
+      eventType: 'HARVEST',
       timestamp: 1000 + i * 1000,
       actor: `actor-${i}`,
     }));
@@ -92,9 +92,9 @@ describe('detectSuspiciousPatterns', () => {
 
   it('flags excessive events for a stage', () => {
     const events = [
-      { event_type: 'HARVEST', timestamp: 1000 },
-      { event_type: 'HARVEST', timestamp: 2000 },
-      { event_type: 'HARVEST', timestamp: 3000 },
+      { eventType: 'HARVEST', timestamp: 1000 },
+      { eventType: 'HARVEST', timestamp: 2000 },
+      { eventType: 'HARVEST', timestamp: 3000 },
     ];
     const result = detectSuspiciousPatterns('prod-1', events);
     const excessive = result.patterns.find((p) => p.type === 'excessive_events');
@@ -103,8 +103,8 @@ describe('detectSuspiciousPatterns', () => {
 
   it('sets riskLevel to the highest severity among patterns', () => {
     const events = [
-      { event_type: 'SHIPPING', timestamp: 5000 },
-      { event_type: 'RETAIL', timestamp: 10000 },
+      { eventType: 'SHIPPING', timestamp: 5000 },
+      { eventType: 'RETAIL', timestamp: 10000 },
     ];
     const result = detectSuspiciousPatterns('prod-1', events);
     expect(result.riskLevel).toBe('critical');
@@ -112,8 +112,8 @@ describe('detectSuspiciousPatterns', () => {
 
   it('populates metadata on rapid_cycling pattern', () => {
     const events = [
-      { event_type: 'PROCESSING', timestamp: 1000 },
-      { event_type: 'PROCESSING', timestamp: 1030 },
+      { eventType: 'PROCESSING', timestamp: 1000 },
+      { eventType: 'PROCESSING', timestamp: 1030 },
     ];
     const result = detectSuspiciousPatterns('prod-1', events);
     const rapid = result.patterns.find((p) => p.type === 'rapid_cycling');

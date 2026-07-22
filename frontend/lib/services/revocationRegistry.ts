@@ -1,11 +1,16 @@
 /**
  * Revocation Registry Service.
  *
- * Tracks revoked certificates and attestations. In production this would
- * be backed by on-chain storage (Soroban contract) and/or a KV store.
+ * Tracks revoked certificates and attestations. Records are persisted through
+ * the shared KV repository (`createCollection`) so they survive across
+ * serverless invocations when a KV backend is configured, falling back to the
+ * shared in-memory backend in dev/test. In production this would additionally
+ * be reconciled with on-chain storage (Soroban contract).
  * The service exposes CRUD helpers and query support used by the UI and
  * verification logic.
  */
+
+import { createCollection } from '@/lib/store';
 
 export type RevocationType = 'certification' | 'attestation' | 'registry_record';
 
@@ -33,9 +38,9 @@ export interface RevocationCheckResult {
   entry?: RevocationEntry;
 }
 
-// ── In-memory store (replace with DB / on-chain in production) ────────────────
+// ── Persistent store (shared KV repository) ───────────────────────────────────
 
-const revocationStore = new Map<string, RevocationEntry>();
+const revocationStore = createCollection<RevocationEntry>('revocation');
 
 // ── CRUD ──────────────────────────────────────────────────────────────────────
 
@@ -82,7 +87,7 @@ export function listRevocations(filters?: {
   productId?: string;
   type?: RevocationType;
 }): RevocationEntry[] {
-  let entries = Array.from(revocationStore.values()).filter((e) => !e.superseded);
+  let entries = revocationStore.all().filter((e) => !e.superseded);
 
   if (filters?.productId) {
     entries = entries.filter((e) => e.productId === filters.productId);
@@ -112,18 +117,14 @@ export function supersede(id: string): RevocationEntry | null {
 }
 
 /** Batch-check multiple subject IDs. Returns a map of subjectId → result. */
-export function batchCheckRevocation(
-  subjectIds: string[],
-): Record<string, RevocationCheckResult> {
+export function batchCheckRevocation(subjectIds: string[]): Record<string, RevocationCheckResult> {
   return Object.fromEntries(subjectIds.map((id) => [id, checkRevocation(id)]));
 }
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 function findBySubjectId(subjectId: string): RevocationEntry | undefined {
-  return Array.from(revocationStore.values()).find(
-    (e) => e.subjectId === subjectId && !e.superseded,
-  );
+  return revocationStore.all().find((e) => e.subjectId === subjectId && !e.superseded);
 }
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
@@ -134,7 +135,7 @@ export function getRevocationStats(): {
   attestations: number;
   registryRecords: number;
 } {
-  const active = Array.from(revocationStore.values()).filter((e) => !e.superseded);
+  const active = revocationStore.all().filter((e) => !e.superseded);
   return {
     total: active.length,
     certifications: active.filter((e) => e.type === 'certification').length,
