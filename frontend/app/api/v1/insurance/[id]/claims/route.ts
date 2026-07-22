@@ -87,7 +87,11 @@ export async function POST(
     return withCors(
       request,
       apiError(request, 422, ErrorCode.VALIDATION_ERROR, 'Validation failed', {
-        details: parsed.error.flatten(),
+        details: parsed.error.issues.map((e) => ({
+          field: e.path.join('.'),
+          location: 'body' as const,
+          message: e.message,
+        })),
       }),
     );
   }
@@ -101,10 +105,7 @@ export async function POST(
   }
 
   recordRequest('POST /api/v1/insurance/[id]/claims', 201, Date.now() - start);
-  return withCors(
-    request,
-    withCorrelationId(request, NextResponse.json(proof, { status: 201 })),
-  );
+  return withCors(request, withCorrelationId(request, NextResponse.json(proof, { status: 201 })));
 }
 
 export async function PATCH(
@@ -156,8 +157,5 @@ export async function PATCH(
   }
 
   recordRequest('PATCH /api/v1/insurance/[id]/claims', 200, Date.now() - start);
-  return withCors(
-    request,
-    withCorrelationId(request, NextResponse.json(updated, { status: 200 })),
-  );
+  return withCors(request, withCorrelationId(request, NextResponse.json(updated, { status: 200 })));
 }

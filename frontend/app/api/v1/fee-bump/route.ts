@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Keypair, TransactionBuilder, Networks, BASE_FEE } from '@stellar/stellar-sdk';
+import { Keypair, TransactionBuilder, Transaction, Networks, BASE_FEE } from '@stellar/stellar-sdk';
 import { withCors, handleOptions } from '@/lib/api/cors';
 import { apiError, withCorrelationId, ErrorCode } from '@/lib/api/errors';
 import { withIdempotency } from '@/lib/api/idempotency';
@@ -43,7 +43,7 @@ async function handler(request: NextRequest) {
 
       let innerTransaction;
       try {
-        innerTransaction = TransactionBuilder.fromXDR(innerTx, Networks.TESTNET);
+        innerTransaction = TransactionBuilder.fromXDR(innerTx, Networks.TESTNET) as Transaction;
       } catch {
         resultStatus = 400;
         resultBody = { error: ErrorCode.INVALID_PAYLOAD, message: 'Invalid transaction XDR' };

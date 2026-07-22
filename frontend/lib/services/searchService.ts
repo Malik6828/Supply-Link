@@ -1,4 +1,5 @@
 import type { Product } from '@/lib/types';
+import { createCollection } from '@/lib/store';
 
 export interface SearchFilter {
   category?: string;
@@ -57,14 +58,19 @@ export interface SearchAnalyticsEvent {
   userId?: string;
 }
 
-// In-memory storage for saved queries (would be database in production)
-const savedQueries = new Map<string, SavedQuery>();
+// Persistent storage for saved queries (shared KV repository).
+const savedQueries = createCollection<SavedQuery>('saved-query');
 
-// In-memory analytics ring buffer (last 200 events)
+// In-memory analytics ring buffer (last 200 events).
+// Deliberately process-local: a short-lived best-effort telemetry buffer, not
+// a persistence store — losing it on restart is acceptable.
 const analyticsBuffer: SearchAnalyticsEvent[] = [];
 const ANALYTICS_BUFFER_SIZE = 200;
 
-// Simple result cache: key → { result, ts }
+// Local per-process result cache: key → { result, ts }.
+// Deliberately a plain Map, NOT the KV repository — this is a 5s in-process
+// memoization of a pure computation, so cross-invocation persistence would add
+// cost without benefit. Safe to lose at any time.
 const resultCache = new Map<string, { result: SearchResult; ts: number }>();
 const CACHE_TTL_MS = 5_000; // 5 s
 
@@ -320,11 +326,11 @@ export function saveQuery(userId: string, name: string, query: SearchQuery): Sav
 }
 
 export function getSavedQueries(userId: string): SavedQuery[] {
-  return Array.from(savedQueries.values()).filter((q) => q.userId === userId);
+  return savedQueries.all().filter((q) => q.userId === userId);
 }
 
 export function getSavedQuery(id: string): SavedQuery | undefined {
-  return savedQueries.get(id);
+  return savedQueries.get(id) ?? undefined;
 }
 
 export function deleteSavedQuery(id: string): boolean {

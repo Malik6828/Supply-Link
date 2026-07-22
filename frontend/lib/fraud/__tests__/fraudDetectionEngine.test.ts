@@ -4,15 +4,15 @@ import { AlertSystem } from '../alertSystem';
 import type { ProductEvent } from '../fraudDetectionEngine';
 
 const cleanEvents: ProductEvent[] = [
-  { event_type: 'HARVEST', timestamp: 0, actor: 'alice', location: 'farm' },
-  { event_type: 'PROCESSING', timestamp: 7200, actor: 'bob', location: 'factory' },
-  { event_type: 'SHIPPING', timestamp: 90000, actor: 'carol', location: 'port' },
-  { event_type: 'RETAIL', timestamp: 200000, actor: 'dave', location: 'warehouse' },
+  { eventType: 'HARVEST', timestamp: 0, actor: 'alice', location: 'farm' },
+  { eventType: 'PROCESSING', timestamp: 7200, actor: 'bob', location: 'factory' },
+  { eventType: 'SHIPPING', timestamp: 90000, actor: 'carol', location: 'port' },
+  { eventType: 'RETAIL', timestamp: 200000, actor: 'dave', location: 'warehouse' },
 ];
 
 const fraudEvents: ProductEvent[] = [
-  { event_type: 'HARVEST', timestamp: 0, actor: 'eve' },
-  { event_type: 'RETAIL', timestamp: 10, actor: 'eve' }, // 10 seconds, skips everything
+  { eventType: 'HARVEST', timestamp: 0, actor: 'eve' },
+  { eventType: 'RETAIL', timestamp: 10, actor: 'eve' }, // 10 seconds, skips everything
 ];
 
 describe('FraudDetectionEngine.analyzeProduct', () => {
@@ -111,19 +111,16 @@ describe('FraudDetectionEngine.analyzeNetwork', () => {
 
   it('emits collaborative alerts for high-risk actors across many products', () => {
     const alertSystem = new AlertSystem({ collaborativeRiskThreshold: 1 });
-    const engine = new FraudDetectionEngine(
-      { enableCollaborativeFiltering: true },
-      alertSystem,
-    );
+    const engine = new FraudDetectionEngine({ enableCollaborativeFiltering: true }, alertSystem);
     const sharedActor = 'fraud-ring';
     const allProducts = new Map<string, ProductEvent[]>(
       Array.from({ length: 15 }, (_, i) => [
         `p${i}`,
         [
-          { event_type: 'HARVEST', timestamp: i * 1000, actor: sharedActor },
-          { event_type: 'PROCESSING', timestamp: i * 1000 + 1, actor: sharedActor },
-          { event_type: 'SHIPPING', timestamp: i * 1000 + 2, actor: sharedActor },
-          { event_type: 'RETAIL', timestamp: i * 1000 + 3, actor: sharedActor },
+          { eventType: 'HARVEST', timestamp: i * 1000, actor: sharedActor },
+          { eventType: 'PROCESSING', timestamp: i * 1000 + 1, actor: sharedActor },
+          { eventType: 'SHIPPING', timestamp: i * 1000 + 2, actor: sharedActor },
+          { eventType: 'RETAIL', timestamp: i * 1000 + 3, actor: sharedActor },
         ],
       ]),
     );

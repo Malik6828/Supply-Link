@@ -59,6 +59,8 @@ function SingleAlertBanner({ alert, onAcknowledge, onDismiss }: SingleAlertBanne
     <div
       role="alert"
       aria-live={alert.severity === 'critical' ? 'assertive' : 'polite'}
+      data-testid={`emergency-alert-${alert.id}`}
+      data-alert-severity={alert.severity}
       className={`rounded-lg border-2 px-4 py-3 ${bannerClass}`}
     >
       <div className="flex items-start gap-3">
@@ -67,18 +69,21 @@ function SingleAlertBanner({ alert, onAcknowledge, onDismiss }: SingleAlertBanne
         <div className="flex-1 min-w-0">
           {/* Header row */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold uppercase tracking-wide opacity-75">
+            <span
+              className="text-xs font-bold uppercase tracking-wide opacity-75"
+              data-testid={`emergency-alert-severity-${alert.id}`}
+            >
               {severityLabel} Alert
             </span>
             <span className="text-xs opacity-60">·</span>
-            <span className="text-xs opacity-60">{createdAt}</span>
+            <span className="text-xs opacity-60" data-testid={`emergency-alert-timestamp-${alert.id}`}>{createdAt}</span>
           </div>
 
-          <p className="font-semibold text-sm mt-0.5">{alert.title}</p>
+          <p className="font-semibold text-sm mt-0.5" data-testid={`emergency-alert-title-${alert.id}`}>{alert.title}</p>
 
           {/* Expandable message */}
           {expanded && (
-            <p className="text-sm mt-1 opacity-90">{alert.message}</p>
+            <p className="text-sm mt-1 opacity-90" data-testid={`emergency-alert-message-${alert.id}`}>{alert.message}</p>
           )}
 
           {/* Action row */}
@@ -86,6 +91,7 @@ function SingleAlertBanner({ alert, onAcknowledge, onDismiss }: SingleAlertBanne
             <button
               type="button"
               onClick={() => setExpanded((v) => !v)}
+              data-testid={`emergency-alert-toggle-${alert.id}`}
               className="text-xs font-medium underline underline-offset-2 opacity-75 hover:opacity-100 flex items-center gap-1"
             >
               {expanded ? (
@@ -103,6 +109,7 @@ function SingleAlertBanner({ alert, onAcknowledge, onDismiss }: SingleAlertBanne
               <button
                 type="button"
                 onClick={handleAcknowledge}
+                data-testid={`emergency-alert-acknowledge-${alert.id}`}
                 className="text-xs font-semibold px-2.5 py-1 rounded border border-current opacity-80 hover:opacity-100 transition-opacity"
               >
                 Acknowledge
@@ -117,6 +124,7 @@ function SingleAlertBanner({ alert, onAcknowledge, onDismiss }: SingleAlertBanne
             type="button"
             onClick={handleDismiss}
             aria-label="Dismiss alert"
+            data-testid={`emergency-alert-dismiss-${alert.id}`}
             className="shrink-0 opacity-60 hover:opacity-100 transition-opacity"
           >
             <X size={16} />
@@ -162,7 +170,7 @@ export function EmergencyAlertBanner({
   });
 
   return (
-    <div className="space-y-2" aria-label="Emergency alerts">
+    <div className="space-y-2" aria-label="Emergency alerts" data-testid="emergency-alert-list">
       {sorted.map((alert) => (
         <SingleAlertBanner
           key={alert.id}
@@ -198,6 +206,7 @@ export function AlertSummaryBanner({
     <div
       role="alert"
       aria-live="polite"
+      data-testid="emergency-alert-summary-banner"
       className={`flex items-center gap-3 rounded-lg border-2 px-4 py-3 ${
         criticalCount > 0
           ? 'border-red-600 bg-red-50 text-red-900 dark:border-red-500 dark:bg-red-950 dark:text-red-100'

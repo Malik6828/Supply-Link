@@ -53,7 +53,7 @@ const RAPID_CYCLE_THRESHOLD_SECONDS = 300; // 5 minutes
 export function detectSuspiciousPatterns(
   productId: string,
   events: Array<{
-    event_type: string;
+    eventType: string;
     timestamp: number;
     actor?: string;
     location?: string;
@@ -79,13 +79,13 @@ export function detectSuspiciousPatterns(
   // ── 1. Duplicate events ──────────────────────────────────────────────────────
   const seen = new Map<string, number>();
   for (let i = 0; i < sorted.length; i++) {
-    const key = `${sorted[i].event_type}:${sorted[i].timestamp}`;
+    const key = `${sorted[i].eventType}:${sorted[i].timestamp}`;
     if (seen.has(key)) {
       patterns.push({
         type: 'duplicate_event',
         severity: 'high',
         eventIndices: [seen.get(key)!, i],
-        message: `Duplicate ${sorted[i].event_type} event at timestamp ${sorted[i].timestamp}`,
+        message: `Duplicate ${sorted[i].eventType} event at timestamp ${sorted[i].timestamp}`,
       });
     } else {
       seen.set(key, i);
@@ -95,22 +95,22 @@ export function detectSuspiciousPatterns(
   // ── 2. Stage regression ──────────────────────────────────────────────────────
   let highWaterMark = -1;
   for (let i = 0; i < sorted.length; i++) {
-    const rank = STAGE_RANK[sorted[i].event_type];
+    const rank = STAGE_RANK[sorted[i].eventType];
     if (rank === undefined) continue;
     if (rank < highWaterMark) {
       patterns.push({
         type: 'stage_regression',
         severity: 'high',
         eventIndices: [i],
-        message: `Stage regression: ${sorted[i].event_type} (rank ${rank}) after reaching rank ${highWaterMark}`,
-        metadata: { regressedTo: sorted[i].event_type, highWaterMark },
+        message: `Stage regression: ${sorted[i].eventType} (rank ${rank}) after reaching rank ${highWaterMark}`,
+        metadata: { regressedTo: sorted[i].eventType, highWaterMark },
       });
     }
     highWaterMark = Math.max(highWaterMark, rank);
   }
 
   // ── 3. Missing mandatory intermediate stage ──────────────────────────────────
-  const observedStages = new Set(sorted.map((e) => e.event_type));
+  const observedStages = new Set(sorted.map((e) => e.eventType));
   if (observedStages.has('RETAIL') && !observedStages.has('HARVEST')) {
     patterns.push({
       type: 'missing_stage',
@@ -127,7 +127,11 @@ export function detectSuspiciousPatterns(
       message: 'Product reached RETAIL without any SHIPPING event',
     });
   }
-  if (observedStages.has('SHIPPING') && !observedStages.has('HARVEST') && !observedStages.has('PROCESSING')) {
+  if (
+    observedStages.has('SHIPPING') &&
+    !observedStages.has('HARVEST') &&
+    !observedStages.has('PROCESSING')
+  ) {
     patterns.push({
       type: 'missing_stage',
       severity: 'medium',
@@ -139,8 +143,8 @@ export function detectSuspiciousPatterns(
   // ── 4. Rapid cycling (same stage repeated too quickly) ───────────────────────
   const lastSeen = new Map<string, number>();
   for (let i = 0; i < sorted.length; i++) {
-    const { event_type, timestamp } = sorted[i];
-    const prev = lastSeen.get(event_type);
+    const { eventType, timestamp } = sorted[i];
+    const prev = lastSeen.get(eventType);
     if (prev !== undefined) {
       const delta = timestamp - sorted[prev].timestamp;
       if (delta < RAPID_CYCLE_THRESHOLD_SECONDS) {
@@ -148,20 +152,20 @@ export function detectSuspiciousPatterns(
           type: 'rapid_cycling',
           severity: delta < 60 ? 'critical' : 'medium',
           eventIndices: [prev, i],
-          message: `Rapid ${event_type} re-occurrence: only ${delta}s between events (threshold: ${RAPID_CYCLE_THRESHOLD_SECONDS}s)`,
+          message: `Rapid ${eventType} re-occurrence: only ${delta}s between events (threshold: ${RAPID_CYCLE_THRESHOLD_SECONDS}s)`,
           metadata: { deltaSeconds: delta },
         });
       }
     }
-    lastSeen.set(event_type, i);
+    lastSeen.set(eventType, i);
   }
 
   // ── 5. Actor switching mid-chain ─────────────────────────────────────────────
   const actorsByStage = new Map<string, Set<string>>();
   for (const ev of sorted) {
     if (!ev.actor) continue;
-    if (!actorsByStage.has(ev.event_type)) actorsByStage.set(ev.event_type, new Set());
-    actorsByStage.get(ev.event_type)!.add(ev.actor);
+    if (!actorsByStage.has(ev.eventType)) actorsByStage.set(ev.eventType, new Set());
+    actorsByStage.get(ev.eventType)!.add(ev.actor);
   }
   for (const [stage, actors] of actorsByStage) {
     if (actors.size > 3) {
@@ -177,7 +181,7 @@ export function detectSuspiciousPatterns(
 
   // ── 6. Excessive total events ────────────────────────────────────────────────
   for (const [stage, maxCount] of Object.entries(MAX_STAGE_OCCURRENCES)) {
-    const count = sorted.filter((e) => e.event_type === stage).length;
+    const count = sorted.filter((e) => e.eventType === stage).length;
     if (count > maxCount) {
       patterns.push({
         type: 'excessive_events',

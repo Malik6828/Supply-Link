@@ -15,6 +15,12 @@ import type { Product, TrackingEvent } from '@/lib/types';
 import { getProductById, getEventsByProductId, getAllProducts } from '@/lib/mock/products';
 
 // ── Cache ─────────────────────────────────────────────────────────────────────
+//
+// Deliberately process-local Maps, NOT the KV repository (`@/lib/store`):
+// these are read-through caches of on-chain data with a 60s TTL, so a cold
+// cache simply triggers a fresh contract read. Persisting them across
+// invocations would add cost and risk serving data staler than the TTL implies.
+// See docs/persistence.md ("Caches vs. persistence").
 
 const CACHE_TTL_MS = 60_000; // 60 s
 

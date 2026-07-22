@@ -5,8 +5,11 @@ import { NextRequest, NextResponse } from 'next/server';
  *
  * Returns the audit snapshot history for a product (#400).
  */
-export async function GET(_req: NextRequest, { params }: { params: { productId: string } }) {
-  const { productId } = params;
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ productId: string }> },
+) {
+  const { productId } = await params;
   if (!productId) {
     return NextResponse.json({ error: 'productId required' }, { status: 400 });
   }

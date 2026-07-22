@@ -29,10 +29,13 @@ function b64url(buf: ArrayBuffer): string {
     .replace(/=+$/, '');
 }
 
-function b64urlDecode(s: string): Uint8Array {
+function b64urlDecode(s: string): Uint8Array<ArrayBuffer> {
   const padded = s.replace(/-/g, '+').replace(/_/g, '/');
   const bin = atob(padded);
-  return Uint8Array.from(bin, (c) => c.charCodeAt(0));
+  const buf = new ArrayBuffer(bin.length);
+  const arr = new Uint8Array(buf);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return arr;
 }
 
 async function hmacKey(secret: string): Promise<CryptoKey> {
@@ -51,7 +54,7 @@ export async function encodeQrProof(payload: QrProofPayload): Promise<string> {
   const key = await hmacKey(APP_SECRET);
   const sig = await crypto.subtle.sign('HMAC', key, data);
   // token = base64url(payload) + '.' + base64url(sig)
-  return `${b64url(data.buffer)}.${b64url(sig)}`;
+  return `${b64url(data.buffer as ArrayBuffer)}.${b64url(sig)}`;
 }
 
 export interface QrProofResult {
@@ -78,7 +81,12 @@ export async function verifyQrProof(token: string): Promise<QrProofResult> {
   }
 
   const key = await hmacKey(APP_SECRET);
-  const ok = await crypto.subtle.verify('HMAC', key, sigBytes, dataBytes);
+  const ok = await crypto.subtle.verify(
+    'HMAC',
+    key,
+    sigBytes.buffer as ArrayBuffer,
+    dataBytes.buffer as ArrayBuffer,
+  );
   if (!ok) return { valid: false, error: 'Signature verification failed' };
 
   try {

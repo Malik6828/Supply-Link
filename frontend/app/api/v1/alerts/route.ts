@@ -111,9 +111,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     recordRequest('POST /api/v1/alerts', 422, Date.now() - start);
     return withCors(
       request,
-      apiError(request, 422, ErrorCode.VALIDATION_ERROR, 'Validation failed', {
-        details: parsed.error.flatten(),
-      }),
+      apiError(
+        request,
+        422,
+        ErrorCode.VALIDATION_ERROR,
+        'Validation failed: ' + parsed.error.issues.map((i) => i.message).join(', '),
+      ),
     );
   }
 
@@ -130,8 +133,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   recordRequest('POST /api/v1/alerts', 201, Date.now() - start);
-  return withCors(
-    request,
-    withCorrelationId(request, NextResponse.json(alert, { status: 201 })),
-  );
+  return withCors(request, withCorrelationId(request, NextResponse.json(alert, { status: 201 })));
 }

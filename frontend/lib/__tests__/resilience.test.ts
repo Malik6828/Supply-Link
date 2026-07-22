@@ -62,7 +62,7 @@ describe('withRetry', () => {
     const fn = vi.fn().mockImplementation(() => new Promise((r) => setTimeout(r, 5_000)));
     const promise = withRetry(fn, { maxAttempts: 1, timeoutMs: 100 });
     await vi.runAllTimersAsync();
-    const err = await promise.catch((e) => e);
+    const err = (await promise.catch((e) => e)) as RetriesExhaustedError;
     expect(err).toBeInstanceOf(RetriesExhaustedError);
     expect(err.message).toMatch(/timed out/i);
   });

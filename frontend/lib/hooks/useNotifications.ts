@@ -8,7 +8,7 @@ import { useWalletAddress } from '@/lib/state/selectors/wallet';
 import { useNotificationsList, useUnreadNotificationsCount } from '@/lib/state/selectors/ui';
 import { contractClient } from '@/lib/stellar/contract';
 import { withRetry } from '@/lib/resilience';
-import type { Notification } from '@/lib/types';
+import type { Notification, NotificationType, EventType } from '@/lib/types';
 
 const POLL_INTERVAL_MS = 30_000;
 
@@ -190,10 +190,10 @@ export function useNotifications() {
 
     for (const product of products) {
       try {
-        const events = await withRetry(
+        const events = (await withRetry(
           () => contractClient.getTrackingEvents(product.id, walletAddress),
           { maxAttempts: 2, baseDelayMs: 1_000 },
-        );
+        )) as import('@/lib/types').TrackingEvent[];
         for (const ev of events) {
           const known = seenTimestamps.current[product.id] ?? 0;
           if (ev.timestamp > known) {
@@ -207,6 +207,7 @@ export function useNotifications() {
               actor: ev.actor,
               timestamp: ev.timestamp,
               read: false,
+              notificationType: 'TRACKING_EVENT' as NotificationType,
             });
           }
         }

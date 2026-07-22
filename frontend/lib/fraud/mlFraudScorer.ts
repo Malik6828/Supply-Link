@@ -51,11 +51,11 @@ const EXPECTED_STAGE_ORDER = ['HARVEST', 'PROCESSING', 'SHIPPING', 'RETAIL'];
 // Feature weights (sum to 1.0)
 const WEIGHTS = {
   minTime: 0.25,
-  rapidTransitions: 0.20,
-  stageProgression: 0.20,
+  rapidTransitions: 0.2,
+  stageProgression: 0.2,
   actorConsistency: 0.15,
-  eventFrequency: 0.10,
-  locationConsistency: 0.10,
+  eventFrequency: 0.1,
+  locationConsistency: 0.1,
 };
 
 function computeActorConsistency(events: Array<{ actor?: string }>): number {
@@ -67,9 +67,9 @@ function computeActorConsistency(events: Array<{ actor?: string }>): number {
   return maxCount / actored.length;
 }
 
-function computeStageProgression(events: Array<{ event_type: string }>): number {
+function computeStageProgression(events: Array<{ eventType: string }>): number {
   const knownRanks = events
-    .map((e) => EXPECTED_STAGE_ORDER.indexOf(e.event_type))
+    .map((e) => EXPECTED_STAGE_ORDER.indexOf(e.eventType))
     .filter((r) => r >= 0);
 
   if (knownRanks.length < 2) return 1;
@@ -93,12 +93,10 @@ function computeLocationConsistency(events: Array<{ location?: string }>): numbe
   return maxCount / located.length;
 }
 
-function countRapidTransitions(
-  sorted: Array<{ event_type: string; timestamp: number }>,
-): number {
+function countRapidTransitions(sorted: Array<{ eventType: string; timestamp: number }>): number {
   let count = 0;
   for (let i = 1; i < sorted.length; i++) {
-    const minTime = STAGE_MINIMUMS[sorted[i - 1].event_type]?.[sorted[i].event_type];
+    const minTime = STAGE_MINIMUMS[sorted[i - 1].eventType]?.[sorted[i].eventType];
     if (minTime && sorted[i].timestamp - sorted[i - 1].timestamp < minTime) count++;
   }
   return count;
@@ -106,7 +104,7 @@ function countRapidTransitions(
 
 export function extractFeatures(
   events: Array<{
-    event_type: string;
+    eventType: string;
     timestamp: number;
     actor?: string;
     location?: string;
@@ -174,7 +172,7 @@ function scoreFrequency(eventsPerHour: number): number {
 export function scoreFraud(
   productId: string,
   events: Array<{
-    event_type: string;
+    eventType: string;
     timestamp: number;
     actor?: string;
     location?: string;
@@ -202,18 +200,23 @@ export function scoreFraud(
 
   // Confidence: higher when we have more data and location coverage
   const confidence = Math.min(
-    0.4 +
-      Math.min(events.length / 10, 0.3) +
-      features.locationCoverageRatio * 0.3,
+    0.4 + Math.min(events.length / 10, 0.3) + features.locationCoverageRatio * 0.3,
     1,
   );
 
   if (minTimeScore > 0.5) riskFactors.push('Extremely fast stage transitions detected');
-  if (rapidScore > 0.3) riskFactors.push(`${features.rapidTransitionCount} transition(s) below minimum expected time`);
-  if (progressionScore > 0.4) riskFactors.push('Stage progression deviates from expected HARVEST→RETAIL order');
-  if (actorScore > 0.5) riskFactors.push(`High actor diversity: ${features.distinctActorCount} distinct actors`);
-  if (freqScore > 0.5) riskFactors.push(`Unusual event frequency: ${features.eventFrequencyPerHour.toFixed(1)} events/hour`);
-  if (locationScore > 0.5) riskFactors.push('Events scattered across many locations — no consistent hub');
+  if (rapidScore > 0.3)
+    riskFactors.push(`${features.rapidTransitionCount} transition(s) below minimum expected time`);
+  if (progressionScore > 0.4)
+    riskFactors.push('Stage progression deviates from expected HARVEST→RETAIL order');
+  if (actorScore > 0.5)
+    riskFactors.push(`High actor diversity: ${features.distinctActorCount} distinct actors`);
+  if (freqScore > 0.5)
+    riskFactors.push(
+      `Unusual event frequency: ${features.eventFrequencyPerHour.toFixed(1)} events/hour`,
+    );
+  if (locationScore > 0.5)
+    riskFactors.push('Events scattered across many locations — no consistent hub');
 
   let riskLevel: 'low' | 'medium' | 'high' | 'critical' = 'low';
   if (fraudScore >= 80) riskLevel = 'critical';

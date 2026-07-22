@@ -7,7 +7,6 @@
  */
 
 import { SupplyLinkContractClient } from './contract-client';
-import { Env } from '@stellar/stellar-sdk';
 
 /**
  * Normalize a product identifier by resolving aliases to canonical IDs.
@@ -22,7 +21,7 @@ export async function normalizeProductId(
 ): Promise<string> {
   try {
     const resolved = await client.resolve_product_id({ id });
-    return resolved;
+    return resolved?.canonical_id ?? id;
   } catch (error) {
     // If resolution fails, assume the ID is canonical
     console.warn(`Failed to resolve product ID ${id}:`, error);
@@ -49,7 +48,6 @@ export async function registerProductAlias(
     const result = await client.register_product_alias({
       canonical_id: canonicalId,
       alias,
-      creator,
     });
     return result;
   } catch (error) {
@@ -73,7 +71,7 @@ export async function isCanonicalId(
 ): Promise<boolean> {
   try {
     const resolved = await client.resolve_product_id({ id });
-    return resolved === id;
+    return resolved === null || resolved.canonical_id === id;
   } catch {
     // If resolution fails, assume it's canonical
     return true;

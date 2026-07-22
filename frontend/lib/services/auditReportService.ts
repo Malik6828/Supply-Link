@@ -41,11 +41,11 @@ export function generateAuditReport(
 
   // Filter by event types if specified
   const typeFilteredEvents = filter.eventTypes
-    ? filteredEvents.filter((e) => filter.eventTypes!.includes(e.event_type))
+    ? filteredEvents.filter((e) => filter.eventTypes!.includes(e.eventType))
     : filteredEvents;
 
   // Get product IDs from filtered events
-  const eventProductIds = new Set(typeFilteredEvents.map((e) => e.product_id));
+  const eventProductIds = new Set(typeFilteredEvents.map((e) => e.productId));
 
   // Filter products
   let filteredProducts = products;
@@ -56,7 +56,7 @@ export function generateAuditReport(
   // Count events by type
   const eventsByType: Record<string, number> = {};
   typeFilteredEvents.forEach((event) => {
-    eventsByType[event.event_type] = (eventsByType[event.event_type] || 0) + 1;
+    eventsByType[event.eventType] = (eventsByType[event.eventType] || 0) + 1;
   });
 
   const report: AuditReportData = {
@@ -116,7 +116,7 @@ export function exportReportAsCSV(report: AuditReportData): string {
   lines.push('Product ID,Event Type,Location,Actor,Timestamp');
   report.events.forEach((event) => {
     lines.push(
-      `"${event.product_id}","${event.event_type}","${event.location}","${event.actor}",${event.timestamp}`,
+      `"${event.productId}","${event.eventType}","${event.location}","${event.actor}",${event.timestamp}`,
     );
   });
 
