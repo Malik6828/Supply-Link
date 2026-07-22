@@ -1,22 +1,14 @@
-"use client";
+'use client';
 
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-} from "recharts";
-import { useTranslations } from "next-intl";
-import type { ProcessingTime, TopProduct, ActorActivity } from "@/lib/hooks/useDashboardData";
-import { EVENT_TYPE_CONFIG } from "@/lib/eventTypeConfig";
-import type { EventType } from "@/lib/types";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useTranslations } from 'next-intl';
+import type { ProcessingTime, TopProduct, ActorActivity } from '@/lib/hooks/useDashboardData';
+import { EVENT_TYPE_CONFIG } from '@/lib/eventTypeConfig';
+import type { EventType } from '@/lib/types';
 
 const TOOLTIP_STYLE = {
-  background: "var(--card)",
-  border: "1px solid var(--card-border)",
+  background: 'var(--card)',
+  border: '1px solid var(--card-border)',
   borderRadius: 8,
   fontSize: 12,
 };
@@ -37,28 +29,36 @@ interface Props {
 }
 
 export default function AdvancedCharts({ processingTimes, topProducts, actorLeaderboard }: Props) {
-  const t = useTranslations("advancedCharts");
+  const t = useTranslations('advancedCharts');
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Avg processing time per stage */}
-      <ChartCard title={t("avgTimeBetweenEvents")}>
+      <ChartCard title={t('avgTimeBetweenEvents')}>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={processingTimes} layout="vertical" margin={{ left: 8 }}>
-            <XAxis type="number" tick={{ fontSize: 11, fill: "var(--muted)" }} tickLine={false} axisLine={false} />
+            <XAxis
+              type="number"
+              tick={{ fontSize: 11, fill: 'var(--muted)' }}
+              tickLine={false}
+              axisLine={false}
+            />
             <YAxis
               type="category"
               dataKey="stage"
-              tick={{ fontSize: 11, fill: "var(--muted)" }}
+              tick={{ fontSize: 11, fill: 'var(--muted)' }}
               tickLine={false}
               axisLine={false}
               width={72}
             />
-            <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => [`${v} h`, t("avgTime")]} />
+            <Tooltip
+              contentStyle={TOOLTIP_STYLE}
+              formatter={(v) => [`${Number(v)} h`, t('avgTime')]}
+            />
             <Bar dataKey="avgHours" radius={[0, 4, 4, 0]}>
               {processingTimes.map(({ stage }) => (
                 <Cell
                   key={stage}
-                  fill={EVENT_TYPE_CONFIG[stage as EventType]?.color ?? "#6b7280"}
+                  fill={EVENT_TYPE_CONFIG[stage as EventType]?.color ?? '#6b7280'}
                 />
               ))}
             </Bar>
@@ -67,23 +67,29 @@ export default function AdvancedCharts({ processingTimes, topProducts, actorLead
       </ChartCard>
 
       {/* Top products by event count */}
-      <ChartCard title={t("topProductsByEventCount")}>
+      <ChartCard title={t('topProductsByEventCount')}>
         {topProducts.length === 0 ? (
-          <p className="text-xs text-[var(--muted)] mt-2">{t("noDataInRange")}</p>
+          <p className="text-xs text-[var(--muted)] mt-2">{t('noDataInRange')}</p>
         ) : (
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={topProducts} layout="vertical" margin={{ left: 8 }}>
-              <XAxis type="number" tick={{ fontSize: 11, fill: "var(--muted)" }} tickLine={false} axisLine={false} allowDecimals={false} />
+              <XAxis
+                type="number"
+                tick={{ fontSize: 11, fill: 'var(--muted)' }}
+                tickLine={false}
+                axisLine={false}
+                allowDecimals={false}
+              />
               <YAxis
                 type="category"
                 dataKey="name"
-                tick={{ fontSize: 11, fill: "var(--muted)" }}
+                tick={{ fontSize: 11, fill: 'var(--muted)' }}
                 tickLine={false}
                 axisLine={false}
                 width={90}
-                tickFormatter={(v: string) => (v.length > 12 ? v.slice(0, 12) + "…" : v)}
+                tickFormatter={(v: string) => (v.length > 12 ? v.slice(0, 12) + '…' : v)}
               />
-              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => [v, t("events")]} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v) => [v, t('events')]} />
               <Bar dataKey="count" fill="var(--primary)" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -91,22 +97,28 @@ export default function AdvancedCharts({ processingTimes, topProducts, actorLead
       </ChartCard>
 
       {/* Actor leaderboard */}
-      <ChartCard title={t("actorLeaderboard")}>
+      <ChartCard title={t('actorLeaderboard')}>
         {actorLeaderboard.length === 0 ? (
-          <p className="text-xs text-[var(--muted)] mt-2">{t("noDataInRange")}</p>
+          <p className="text-xs text-[var(--muted)] mt-2">{t('noDataInRange')}</p>
         ) : (
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={actorLeaderboard} layout="vertical" margin={{ left: 8 }}>
-              <XAxis type="number" tick={{ fontSize: 11, fill: "var(--muted)" }} tickLine={false} axisLine={false} allowDecimals={false} />
+              <XAxis
+                type="number"
+                tick={{ fontSize: 11, fill: 'var(--muted)' }}
+                tickLine={false}
+                axisLine={false}
+                allowDecimals={false}
+              />
               <YAxis
                 type="category"
                 dataKey="actor"
-                tick={{ fontSize: 11, fill: "var(--muted)", fontFamily: "monospace" }}
+                tick={{ fontSize: 11, fill: 'var(--muted)', fontFamily: 'monospace' }}
                 tickLine={false}
                 axisLine={false}
                 width={80}
               />
-              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => [v, t("events")]} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v) => [v, t('events')]} />
               <Bar dataKey="count" fill="#10b981" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>

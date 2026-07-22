@@ -1,9 +1,12 @@
-import type { NextConfig } from "next";
-import bundleAnalyzer from "@next/bundle-analyzer";
+import type { NextConfig } from 'next';
+import bundleAnalyzer from '@next/bundle-analyzer';
+import createNextIntlPlugin from 'next-intl/plugin';
 
 const withBundleAnalyzer = bundleAnalyzer({
-  enabled: process.env.ANALYZE === "true",
+  enabled: process.env.ANALYZE === 'true',
 });
+
+const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
 /**
  * HTTP Security Headers
@@ -37,7 +40,7 @@ const withBundleAnalyzer = bundleAnalyzer({
  */
 const securityHeaders = [
   {
-    key: "Content-Security-Policy",
+    key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
       // TODO: replace 'unsafe-inline' with nonce-based CSP using next/headers
@@ -47,44 +50,52 @@ const securityHeaders = [
       "img-src 'self' data: blob:",
       [
         "connect-src 'self'",
-        "https://*.stellar.org",
-        "https://*.soroban.stellar.org",
-        "https://soroban-testnet.stellar.org",
-        "https://soroban-mainnet.stellar.org",
-        "https://*.vercel-insights.com",
-      ].join(" "),
+        'https://*.stellar.org',
+        'https://*.soroban.stellar.org',
+        'https://soroban-testnet.stellar.org',
+        'https://soroban-mainnet.stellar.org',
+        'https://*.vercel-insights.com',
+      ].join(' '),
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
-      "block-all-mixed-content",
-      "upgrade-insecure-requests",
-    ].join("; "),
+      'block-all-mixed-content',
+      'upgrade-insecure-requests',
+    ].join('; '),
   },
   {
-    key: "X-Frame-Options",
-    value: "DENY",
+    key: 'X-Frame-Options',
+    value: 'DENY',
   },
   {
-    key: "X-Content-Type-Options",
-    value: "nosniff",
+    key: 'X-Content-Type-Options',
+    value: 'nosniff',
   },
   {
-    key: "Referrer-Policy",
-    value: "strict-origin-when-cross-origin",
+    key: 'Referrer-Policy',
+    value: 'strict-origin-when-cross-origin',
   },
   {
-    key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=()",
+    key: 'Permissions-Policy',
+    value: 'camera=(), microphone=(), geolocation=()',
   },
 ];
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  output: 'standalone',
+  // Manually wire up next-intl's config alias for Turbopack builds.
+  // next-intl's createNextIntlPlugin uses experimental.turbo.resolveAlias which
+  // was moved to the top-level turbopack key in Next.js 15+, so we set it explicitly.
+  turbopack: {
+    resolveAlias: {
+      'next-intl/config': './i18n/request.ts',
+    },
+  },
   images: {
     remotePatterns: [
       {
-        protocol: "https",
-        hostname: "**",
+        protocol: 'https',
+        hostname: '**',
       },
     ],
   },
@@ -92,19 +103,19 @@ const nextConfig: NextConfig = {
     return [
       {
         // Service worker must never be cached so browsers always get the latest version
-        source: "/sw.js",
+        source: '/sw.js',
         headers: [
-          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
-          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Content-Type', value: 'application/javascript; charset=utf-8' },
         ],
       },
       {
         // PWA manifest
-        source: "/manifest.webmanifest",
-        headers: [{ key: "Cache-Control", value: "public, max-age=0, must-revalidate" }],
+        source: '/manifest.webmanifest',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' }],
       },
     ];
   },
 };
 
-export default withBundleAnalyzer(nextConfig);
+export default withBundleAnalyzer(withNextIntl(nextConfig));

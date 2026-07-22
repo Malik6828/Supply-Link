@@ -43,7 +43,7 @@ export interface CollaborativeFilterResult {
 
 export interface ProductEventSummary {
   events: Array<{
-    event_type: string;
+    eventType: string;
     timestamp: number;
     actor?: string;
     location?: string;
@@ -87,8 +87,8 @@ function buildActorProfiles(
         if (summary.isSuspicious) profile.suspiciousProductCount++;
       }
 
-      if (!profile.operatedStages.includes(ev.event_type)) {
-        profile.operatedStages.push(ev.event_type);
+      if (!profile.operatedStages.includes(ev.eventType)) {
+        profile.operatedStages.push(ev.eventType);
       }
     }
   }
@@ -102,9 +102,7 @@ function scoreActor(profile: ActorBehaviorProfile): { score: number; patterns: s
 
   // Factor 1: ratio of suspicious products
   const suspiciousRatio =
-    profile.productIds.length > 0
-      ? profile.suspiciousProductCount / profile.productIds.length
-      : 0;
+    profile.productIds.length > 0 ? profile.suspiciousProductCount / profile.productIds.length : 0;
   if (suspiciousRatio > 0) {
     score += suspiciousRatio * 40;
     patterns.push(
@@ -121,7 +119,9 @@ function scoreActor(profile: ActorBehaviorProfile): { score: number; patterns: s
   // Factor 3: operating in every stage (a single actor should not span HARVEST to RETAIL)
   if (profile.operatedStages.length >= 4) {
     score += 20;
-    patterns.push('Actor operates across all supply chain stages — unusual single-entity behaviour');
+    patterns.push(
+      'Actor operates across all supply chain stages — unusual single-entity behaviour',
+    );
   } else if (profile.operatedStages.length === 3) {
     score += 10;
   }

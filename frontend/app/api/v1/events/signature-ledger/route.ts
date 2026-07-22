@@ -122,7 +122,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // Recompute chain up to offset to get the correct prevHash
     for (let i = 0; i < offset && i < allEvents.length; i++) {
       const e = allEvents[i];
-      const eventHash = hashEvent(e.product_id, e.actor, e.event_type, e.timestamp, e.metadata);
+      const eventHash = hashEvent(e.productId, e.actor, e.eventType, e.timestamp, e.metadata);
       const chainAnchor = sha256(eventHash + prevHash);
       prevHash = chainAnchor;
     }
@@ -130,17 +130,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const entries: CustodyEntry[] = page.map((event, idx) => {
     const eventHash = hashEvent(
-      event.product_id,
+      event.productId,
       event.actor,
-      event.event_type,
+      event.eventType,
       event.timestamp,
       event.metadata,
     );
     const chainAnchor = sha256(eventHash + prevHash);
     const entry: CustodyEntry = {
       eventIndex: offset + idx,
-      productId: event.product_id,
-      eventType: event.event_type,
+      productId: event.productId,
+      eventType: event.eventType,
       signerAddress: event.actor,
       eventHash,
       prevHash,

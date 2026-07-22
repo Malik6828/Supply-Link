@@ -130,6 +130,7 @@ describe('getProvenanceScorePercentage', () => {
         timingConsistency: 10,
         uniqueActors: 10,
         authorizedActorDepth: 10,
+        actorReputation: 0,
       }),
     ).toBe(100);
   });
@@ -144,6 +145,7 @@ describe('getProvenanceScorePercentage', () => {
         timingConsistency: 0,
         uniqueActors: 0,
         authorizedActorDepth: 0,
+        actorReputation: 0,
       }),
     ).toBe(0);
   });

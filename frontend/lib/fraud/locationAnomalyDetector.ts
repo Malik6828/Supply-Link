@@ -40,35 +40,30 @@ const EARTH_RADIUS_KM = 6371;
 const KNOWN_LOCATIONS: Record<string, KnownLocation> = {
   'new york': { name: 'New York', lat: 40.7128, lng: -74.006, region: 'US-East' },
   'los angeles': { name: 'Los Angeles', lat: 34.0522, lng: -118.2437, region: 'US-West' },
-  'chicago': { name: 'Chicago', lat: 41.8781, lng: -87.6298, region: 'US-Midwest' },
-  'houston': { name: 'Houston', lat: 29.7604, lng: -95.3698, region: 'US-South' },
-  'london': { name: 'London', lat: 51.5074, lng: -0.1278, region: 'EU-UK' },
-  'paris': { name: 'Paris', lat: 48.8566, lng: 2.3522, region: 'EU-France' },
-  'berlin': { name: 'Berlin', lat: 52.52, lng: 13.405, region: 'EU-Germany' },
-  'tokyo': { name: 'Tokyo', lat: 35.6762, lng: 139.6503, region: 'Asia-Japan' },
-  'shanghai': { name: 'Shanghai', lat: 31.2304, lng: 121.4737, region: 'Asia-China' },
-  'beijing': { name: 'Beijing', lat: 39.9042, lng: 116.4074, region: 'Asia-China' },
-  'sydney': { name: 'Sydney', lat: -33.8688, lng: 151.2093, region: 'Oceania' },
-  'dubai': { name: 'Dubai', lat: 25.2048, lng: 55.2708, region: 'Middle-East' },
-  'singapore': { name: 'Singapore', lat: 1.3521, lng: 103.8198, region: 'Asia-SE' },
+  chicago: { name: 'Chicago', lat: 41.8781, lng: -87.6298, region: 'US-Midwest' },
+  houston: { name: 'Houston', lat: 29.7604, lng: -95.3698, region: 'US-South' },
+  london: { name: 'London', lat: 51.5074, lng: -0.1278, region: 'EU-UK' },
+  paris: { name: 'Paris', lat: 48.8566, lng: 2.3522, region: 'EU-France' },
+  berlin: { name: 'Berlin', lat: 52.52, lng: 13.405, region: 'EU-Germany' },
+  tokyo: { name: 'Tokyo', lat: 35.6762, lng: 139.6503, region: 'Asia-Japan' },
+  shanghai: { name: 'Shanghai', lat: 31.2304, lng: 121.4737, region: 'Asia-China' },
+  beijing: { name: 'Beijing', lat: 39.9042, lng: 116.4074, region: 'Asia-China' },
+  sydney: { name: 'Sydney', lat: -33.8688, lng: 151.2093, region: 'Oceania' },
+  dubai: { name: 'Dubai', lat: 25.2048, lng: 55.2708, region: 'Middle-East' },
+  singapore: { name: 'Singapore', lat: 1.3521, lng: 103.8198, region: 'Asia-SE' },
   'sao paulo': { name: 'São Paulo', lat: -23.5505, lng: -46.6333, region: 'SA-Brazil' },
-  'mumbai': { name: 'Mumbai', lat: 19.076, lng: 72.8777, region: 'Asia-India' },
-  'farm': { name: 'Generic Farm', lat: 35.0, lng: -90.0, region: 'US-South' },
-  'warehouse': { name: 'Generic Warehouse', lat: 40.0, lng: -80.0, region: 'US-East' },
-  'port': { name: 'Generic Port', lat: 37.8044, lng: -122.2712, region: 'US-West' },
-  'factory': { name: 'Generic Factory', lat: 42.0, lng: -83.0, region: 'US-Midwest' },
+  mumbai: { name: 'Mumbai', lat: 19.076, lng: 72.8777, region: 'Asia-India' },
+  farm: { name: 'Generic Farm', lat: 35.0, lng: -90.0, region: 'US-South' },
+  warehouse: { name: 'Generic Warehouse', lat: 40.0, lng: -80.0, region: 'US-East' },
+  port: { name: 'Generic Port', lat: 37.8044, lng: -122.2712, region: 'US-West' },
+  factory: { name: 'Generic Factory', lat: 42.0, lng: -83.0, region: 'US-Midwest' },
 };
 
 function toRadians(degrees: number): number {
   return (degrees * Math.PI) / 180;
 }
 
-export function haversineDistance(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number,
-): number {
+export function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const dLat = toRadians(lat2 - lat1);
   const dLng = toRadians(lng2 - lng1);
   const a =
@@ -102,9 +97,7 @@ export function resolveLocation(locationStr: string): KnownLocation | null {
   return null;
 }
 
-function getSeverity(
-  requiredSpeedKph: number,
-): 'low' | 'medium' | 'high' | 'critical' {
+function getSeverity(requiredSpeedKph: number): 'low' | 'medium' | 'high' | 'critical' {
   if (requiredSpeedKph > MAX_AIR_SPEED_KPH * 2) return 'critical';
   if (requiredSpeedKph > MAX_AIR_SPEED_KPH) return 'high';
   if (requiredSpeedKph > MAX_GROUND_SPEED_KPH * 3) return 'medium';
@@ -114,7 +107,7 @@ function getSeverity(
 export function detectLocationAnomalies(
   productId: string,
   events: Array<{
-    event_type: string;
+    eventType: string;
     timestamp: number;
     location: string;
   }>,

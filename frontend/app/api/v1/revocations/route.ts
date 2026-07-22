@@ -116,7 +116,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return withCors(
       request,
       apiError(request, 422, ErrorCode.VALIDATION_ERROR, 'Validation failed', {
-        details: parsed.error.flatten(),
+        details: parsed.error.issues.map((e) => ({
+          field: e.path.join('.'),
+          location: 'body' as const,
+          message: e.message,
+        })),
       }),
     );
   }
@@ -124,8 +128,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const entry = revokeCredential(parsed.data);
 
   recordRequest('POST /api/v1/revocations', 201, Date.now() - start);
-  return withCors(
-    request,
-    withCorrelationId(request, NextResponse.json(entry, { status: 201 })),
-  );
+  return withCors(request, withCorrelationId(request, NextResponse.json(entry, { status: 201 })));
 }

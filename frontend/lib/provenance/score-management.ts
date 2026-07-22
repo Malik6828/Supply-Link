@@ -47,17 +47,28 @@ export async function setProvenanceScore(
   productId: string,
   score: number,
   verifiedEventCount: number,
+  schemaVersion = 1,
 ): Promise<ProvenanceScoreData> {
   if (score < 0 || score > 100) {
     throw new Error('Provenance score must be between 0 and 100');
   }
 
   try {
-    const result = await client.set_provenance_score({
+    const raw = await client.set_provenance_score({
       product_id: productId,
       score,
+      schema_version: schemaVersion,
       verified_event_count: verifiedEventCount,
     });
+
+    // The contract returns the stored score record; narrow from unknown.
+    const result = raw as {
+      product_id: string;
+      score: number;
+      last_calculated_at: number;
+      verified_event_count: number;
+      schema_version: number;
+    };
 
     return {
       productId: result.product_id,
@@ -93,7 +104,7 @@ export async function getProvenanceScore(
     }
 
     return {
-      productId: result.product_id,
+      productId,
       score: result.score,
       lastCalculatedAt: result.last_calculated_at,
       verifiedEventCount: result.verified_event_count,

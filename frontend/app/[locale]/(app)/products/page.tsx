@@ -17,6 +17,7 @@ import { CompareBar } from '@/components/products/CompareBar';
 import ProductQRCode from '@/components/products/ProductQRCode';
 import type { EventType } from '@/lib/types';
 import { EVENT_TYPE_CONFIG } from '@/lib/eventTypeConfig';
+import { PRODUCT_TAXONOMY } from '@/lib/taxonomy';
 
 const EVENT_TYPES: EventType[] = ['HARVEST', 'PROCESSING', 'SHIPPING', 'RETAIL'];
 

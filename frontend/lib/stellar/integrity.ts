@@ -51,8 +51,8 @@ export interface IntegrityResult {
 
 const enc = new TextEncoder();
 
-async function sha256Bytes(data: Uint8Array): Promise<Uint8Array> {
-  const buf = await crypto.subtle.digest('SHA-256', data);
+async function sha256Bytes(data: Uint8Array): Promise<Uint8Array<ArrayBuffer>> {
+  const buf = (await crypto.subtle.digest('SHA-256', data.buffer as ArrayBuffer)) as ArrayBuffer;
   return new Uint8Array(buf);
 }
 
@@ -81,9 +81,10 @@ function u32ToBeBytes(value: number): Uint8Array {
   return out;
 }
 
-function concat(...arrays: Uint8Array[]): Uint8Array {
+function concat(...arrays: Uint8Array[]): Uint8Array<ArrayBuffer> {
   const total = arrays.reduce((n, a) => n + a.length, 0);
-  const out = new Uint8Array(total);
+  const buf = new ArrayBuffer(total);
+  const out = new Uint8Array(buf);
   let offset = 0;
   for (const a of arrays) {
     out.set(a, offset);
@@ -110,7 +111,7 @@ function toHex(bytes: Uint8Array): string {
  * @returns       32-byte provenance root as a hex string.
  */
 export async function computeProvenanceRoot(events: TrackingEventData[]): Promise<string> {
-  let root = new Uint8Array(32); // zero root
+  let root: Uint8Array<ArrayBuffer> = new Uint8Array(new ArrayBuffer(32)); // zero root
 
   for (const event of events) {
     const etHash = await sha256Bytes(enc.encode(event.event_type));

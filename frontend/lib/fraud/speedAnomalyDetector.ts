@@ -52,7 +52,7 @@ function getSeverity(
 export function detectSpeedAnomalies(
   productId: string,
   events: Array<{
-    event_type: string;
+    eventType: string;
     timestamp: number;
   }>,
 ): AnomalyDetectionResult {
@@ -76,18 +76,18 @@ export function detectSpeedAnomalies(
     const currEvent = sortedEvents[i];
     const timeBetween = currEvent.timestamp - prevEvent.timestamp;
 
-    const expectedMin = STAGE_MINIMUMS[prevEvent.event_type]?.[currEvent.event_type];
+    const expectedMin = STAGE_MINIMUMS[prevEvent.eventType]?.[currEvent.eventType];
 
     if (expectedMin && timeBetween < expectedMin) {
       const severity = getSeverity(timeBetween, expectedMin);
       alerts.push({
         eventIndex: i,
         severity,
-        message: `Suspiciously fast transition from ${prevEvent.event_type} to ${currEvent.event_type}`,
+        message: `Suspiciously fast transition from ${prevEvent.eventType} to ${currEvent.eventType}`,
         timeBetweenEvents: timeBetween,
         expectedMinimum: expectedMin,
-        fromStage: prevEvent.event_type,
-        toStage: currEvent.event_type,
+        fromStage: prevEvent.eventType,
+        toStage: currEvent.eventType,
       });
     }
   }
