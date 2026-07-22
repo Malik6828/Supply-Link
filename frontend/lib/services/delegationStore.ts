@@ -1,11 +1,17 @@
 /**
- * Shared in-memory delegation store.
- * In production, replace with a database-backed implementation.
+ * Shared delegation store.
+ *
+ * Persistence is backed by the shared KV repository (`createCollection`) so
+ * records survive across serverless invocations when a KV backend is
+ * configured, and fall back to the shared in-memory backend in dev/test.
+ * In production, point `KV_REST_API_URL` / `KV_REST_API_TOKEN` at Vercel KV.
  */
 
 import type { Delegation } from '@/lib/types';
+import { createCollection } from '@/lib/store';
 
-const store = new Map<string, Delegation[]>();
+/** Delegations are grouped per product, so each record is a `Delegation[]`. */
+const store = createCollection<Delegation[]>('delegation');
 
 export const delegationStore = {
   list(productId: string): Delegation[] {
