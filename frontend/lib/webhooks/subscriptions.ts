@@ -1,20 +1,43 @@
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { randomBytes } from 'crypto';
-import type { WebhookSubscription, WebhookEventType, ProductEventType } from './types';
-
-// Store subscriptions in a JSON file in the project (consider using a real DB in production)
-const WEBHOOKS_DIR = path.join(process.cwd(), '.kiro', 'webhooks');
-const SUBSCRIPTIONS_FILE = path.join(WEBHOOKS_DIR, 'subscriptions.json');
-
 /**
- * Ensure the webhooks directory exists
+ * Webhook subscription persistence.
+ *
+ * Backed by the shared KVStore (Vercel KV in production, in-memory Map in
+ * dev/test — see lib/kv.ts) instead of a local JSON file, so state survives
+ * across serverless invocations.
+ *
+ * KV layout:
+ *   subscription:<id>     -> WebhookSubscription (JSON)
+ *   subscription:list     -> string[] of subscription ids
  */
-async function ensureDir(): Promise<void> {
-  try {
-    await fs.mkdir(WEBHOOKS_DIR, { recursive: true });
-  } catch (err) {
-    // Directory might already exist or we're in a read-only environment
+import { randomBytes } from 'crypto';
+import { kvStore } from '@/lib/kv';
+import type { WebhookSubscription, WebhookEventType, ProductEventType } from './types';
+import { WEBHOOK_RECORD_TTL_SECONDS } from './config';
+
+const SUBSCRIPTION_LIST_KEY = 'subscription:list';
+
+function subscriptionKey(id: string): string {
+  return `subscription:${id}`;
+}
+
+async function readList(key: string): Promise<string[]> {
+  const raw = await kvStore.get(key);
+  return raw ? (JSON.parse(raw) as string[]) : [];
+}
+
+async function addToList(key: string, value: string, ttlSeconds: number): Promise<void> {
+  const list = await readList(key);
+  if (!list.includes(value)) {
+    list.push(value);
+    await kvStore.set(key, JSON.stringify(list), ttlSeconds);
+  }
+}
+
+async function removeFromList(key: string, value: string, ttlSeconds: number): Promise<void> {
+  const list = await readList(key);
+  const filtered = list.filter((v) => v !== value);
+  if (filtered.length !== list.length) {
+    await kvStore.set(key, JSON.stringify(filtered), ttlSeconds);
   }
 }
 
@@ -22,22 +45,18 @@ async function ensureDir(): Promise<void> {
  * Read all subscriptions from storage
  */
 export async function getSubscriptions(): Promise<WebhookSubscription[]> {
-  await ensureDir();
-  try {
-    const data = await fs.readFile(SUBSCRIPTIONS_FILE, 'utf-8');
-    return JSON.parse(data) as WebhookSubscription[];
-  } catch {
-    // File doesn't exist yet
-    return [];
-  }
+  const ids = await readList(SUBSCRIPTION_LIST_KEY);
+  const subscriptions = await Promise.all(ids.map((id) => getSubscriptionById(id)));
+  return subscriptions.filter((s): s is WebhookSubscription => s !== null);
 }
 
 /**
  * Get a single subscription by ID
  */
 export async function getSubscriptionById(id: string): Promise<WebhookSubscription | null> {
-  const subscriptions = await getSubscriptions();
-  return subscriptions.find((s) => s.id === id) || null;
+  const raw = await kvStore.get(subscriptionKey(id));
+  if (!raw) return null;
+  return JSON.parse(raw) as WebhookSubscription;
 }
 
 /**
@@ -70,7 +89,6 @@ export async function createSubscription(
     };
   },
 ): Promise<WebhookSubscription> {
-  await ensureDir();
   const id = randomBytes(16).toString('hex');
   const now = Date.now();
 
@@ -91,9 +109,8 @@ export async function createSubscription(
     updatedAt: now,
   };
 
-  const subscriptions = await getSubscriptions();
-  subscriptions.push(subscription);
-  await fs.writeFile(SUBSCRIPTIONS_FILE, JSON.stringify(subscriptions, null, 2));
+  await kvStore.set(subscriptionKey(id), JSON.stringify(subscription), WEBHOOK_RECORD_TTL_SECONDS);
+  await addToList(SUBSCRIPTION_LIST_KEY, id, WEBHOOK_RECORD_TTL_SECONDS);
 
   return subscription;
 }
@@ -105,13 +122,9 @@ export async function updateSubscription(
   id: string,
   updates: Partial<WebhookSubscription>,
 ): Promise<WebhookSubscription | null> {
-  await ensureDir();
-  const subscriptions = await getSubscriptions();
-  const index = subscriptions.findIndex((s) => s.id === id);
+  const subscription = await getSubscriptionById(id);
+  if (!subscription) return null;
 
-  if (index === -1) return null;
-
-  const subscription = subscriptions[index];
   const updated: WebhookSubscription = {
     ...subscription,
     ...updates,
@@ -120,8 +133,7 @@ export async function updateSubscription(
     updatedAt: Date.now(),
   };
 
-  subscriptions[index] = updated;
-  await fs.writeFile(SUBSCRIPTIONS_FILE, JSON.stringify(subscriptions, null, 2));
+  await kvStore.set(subscriptionKey(id), JSON.stringify(updated), WEBHOOK_RECORD_TTL_SECONDS);
 
   return updated;
 }
@@ -130,13 +142,12 @@ export async function updateSubscription(
  * Delete a subscription
  */
 export async function deleteSubscription(id: string): Promise<boolean> {
-  await ensureDir();
-  const subscriptions = await getSubscriptions();
-  const filtered = subscriptions.filter((s) => s.id !== id);
+  const subscription = await getSubscriptionById(id);
+  if (!subscription) return false;
 
-  if (filtered.length === subscriptions.length) return false; // Not found
+  await kvStore.del(subscriptionKey(id));
+  await removeFromList(SUBSCRIPTION_LIST_KEY, id, WEBHOOK_RECORD_TTL_SECONDS);
 
-  await fs.writeFile(SUBSCRIPTIONS_FILE, JSON.stringify(filtered, null, 2));
   return true;
 }
 
@@ -190,13 +201,11 @@ export async function updateSubscriptionTrigger(id: string): Promise<WebhookSubs
  * Delete all subscriptions for a webhook (called when webhook is deleted)
  */
 export async function deleteSubscriptionsByWebhookId(webhookId: string): Promise<number> {
-  const subscriptions = await getSubscriptions();
-  const filtered = subscriptions.filter((s) => s.webhookId !== webhookId);
-  const deletedCount = subscriptions.length - filtered.length;
+  const subscriptions = await getSubscriptionsByWebhookId(webhookId);
 
-  if (deletedCount > 0) {
-    await fs.writeFile(SUBSCRIPTIONS_FILE, JSON.stringify(filtered, null, 2));
+  for (const subscription of subscriptions) {
+    await deleteSubscription(subscription.id);
   }
 
-  return deletedCount;
+  return subscriptions.length;
 }
