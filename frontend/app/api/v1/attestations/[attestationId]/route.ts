@@ -11,6 +11,8 @@ import { applyRateLimit, RATE_LIMIT_PRESETS } from '@/lib/api/rateLimit';
 import { authenticateRegistryKey } from '@/lib/api/apiKeyAuth';
 import { recordRequest } from '@/lib/api/metrics';
 import { getAttestation, revokeAttestation } from '@/lib/attestations';
+import { attestationRevokeBodySchema } from '@/lib/api/schemas';
+import { handleValidationError, parseJsonBody } from '@/lib/api/validation';
 
 export const runtime = 'nodejs';
 
@@ -92,33 +94,37 @@ export async function DELETE(
     return res;
   }
 
-  let reason: string | undefined;
   try {
-    const body = await request.json().catch(() => ({}));
-    reason = typeof body?.reason === 'string' ? body.reason : undefined;
-  } catch {
-    // body is optional
-  }
+    const rawBody = await request.text();
+    const { reason } = parseJsonBody(request, rawBody || '{}', attestationRevokeBodySchema);
+    const result = await revokeAttestation(attestationId, callerAddress, reason);
 
-  const result = await revokeAttestation(attestationId, callerAddress, reason);
+    if (!result.success) {
+      const status = result.error === 'Attestation not found' ? 404 : 403;
+      const res = withCors(
+        request,
+        apiError(request, status, ErrorCode.UNAUTHORIZED, result.error ?? 'Revocation failed'),
+      );
+      recordRequest('DELETE /api/v1/attestations/[id]', status, Date.now() - start);
+      return res;
+    }
 
-  if (!result.success) {
-    const status = result.error === 'Attestation not found' ? 404 : 403;
+    const response = withCors(
+      request,
+      withCorrelationId(
+        request,
+        NextResponse.json({ attestationId, revoked: true, revokedAt: Date.now() }, { status: 200 }),
+      ),
+    );
+    recordRequest('DELETE /api/v1/attestations/[id]', response.status, Date.now() - start);
+    return response;
+  } catch (error) {
     const res = withCors(
       request,
-      apiError(request, status, ErrorCode.UNAUTHORIZED, result.error ?? 'Revocation failed'),
+      handleValidationError(request, error) ??
+        apiError(request, 400, ErrorCode.VALIDATION_ERROR, 'Request validation failed'),
     );
-    recordRequest('DELETE /api/v1/attestations/[id]', status, Date.now() - start);
+    recordRequest('DELETE /api/v1/attestations/[id]', 400, Date.now() - start);
     return res;
   }
-
-  const response = withCors(
-    request,
-    withCorrelationId(
-      request,
-      NextResponse.json({ attestationId, revoked: true, revokedAt: Date.now() }, { status: 200 }),
-    ),
-  );
-  recordRequest('DELETE /api/v1/attestations/[id]', response.status, Date.now() - start);
-  return response;
 }
