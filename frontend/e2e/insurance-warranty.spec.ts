@@ -134,10 +134,9 @@ test.describe('Insurance API: premium → coverage → claim → process → cer
     expect(coverage.productId).toBe(PRODUCT_WITH_WARRANTY);
 
     // Step 2: Verify GET returns the new coverage record
-    const listRes = await request.get(
-      `/api/v1/insurance?productId=${PRODUCT_WITH_WARRANTY}`,
-      { headers: PARTNER_HEADERS },
-    );
+    const listRes = await request.get(`/api/v1/insurance?productId=${PRODUCT_WITH_WARRANTY}`, {
+      headers: PARTNER_HEADERS,
+    });
     expect(listRes.status()).toBe(200);
     const listBody = await listRes.json();
     expect(listBody.coverages.some((c: { id: string }) => c.id === coverage.id)).toBe(true);
@@ -246,9 +245,7 @@ test.describe('Insurance API: premium → coverage → claim → process → cer
 // ── Suite 2: Warranty API lifecycle ──────────────────────────────────────────
 
 test.describe('Warranty API: file claim → process → resolved', () => {
-  test('GET /api/v1/products/[id]/warranty returns warranty for prod-001', async ({
-    request,
-  }) => {
+  test('GET /api/v1/products/[id]/warranty returns warranty for prod-001', async ({ request }) => {
     const res = await request.get(`/api/v1/products/${PRODUCT_WITH_WARRANTY}/warranty`, {
       headers: PARTNER_HEADERS,
     });
@@ -293,16 +290,13 @@ test.describe('Warranty API: file claim → process → resolved', () => {
     expect(claim.description).toContain('grade specification');
 
     // Step 2: List claims — the new claim must appear
-    const listRes = await request.get(
-      `/api/v1/products/${PRODUCT_WITH_WARRANTY}/warranty/claims`,
-      { headers: PARTNER_HEADERS },
-    );
+    const listRes = await request.get(`/api/v1/products/${PRODUCT_WITH_WARRANTY}/warranty/claims`, {
+      headers: PARTNER_HEADERS,
+    });
     expect(listRes.status()).toBe(200);
     const listBody = await listRes.json();
     expect(listBody.total).toBeGreaterThanOrEqual(1);
-    const found = listBody.items.find(
-      (c: { claimId: string }) => c.claimId === claim.claimId,
-    );
+    const found = listBody.items.find((c: { claimId: string }) => c.claimId === claim.claimId);
     expect(found).toBeDefined();
     expect(found.status).toBe('Pending');
 
@@ -378,10 +372,7 @@ test.describe('InsuranceCoveragePanel UI: add coverage → expand → file claim
     await expect(panel.locator('h3')).toContainText('Insurance Coverage');
   });
 
-  test('panel shows coverage card after coverage is seeded via API', async ({
-    page,
-    request,
-  }) => {
+  test('panel shows coverage card after coverage is seeded via API', async ({ page, request }) => {
     // Seed coverage before navigating so the in-memory store has data
     await seedCoverage(request, PRODUCT_WITH_WARRANTY);
 
@@ -400,10 +391,7 @@ test.describe('InsuranceCoveragePanel UI: add coverage → expand → file claim
     await expect(totalBadge).toBeVisible();
   });
 
-  test('expanding a coverage card reveals claim form trigger', async ({
-    page,
-    request,
-  }) => {
+  test('expanding a coverage card reveals claim form trigger', async ({ page, request }) => {
     await seedCoverage(request, PRODUCT_WITH_WARRANTY);
 
     await page.goto(`/en/products/${PRODUCT_WITH_WARRANTY}`);
@@ -421,10 +409,7 @@ test.describe('InsuranceCoveragePanel UI: add coverage → expand → file claim
     await expect(addClaimBtn).toBeVisible({ timeout: 3000 });
   });
 
-  test('submitting a claim proof via UI updates coverage status', async ({
-    page,
-    request,
-  }) => {
+  test('submitting a claim proof via UI updates coverage status', async ({ page, request }) => {
     await seedCoverage(request, PRODUCT_WITH_WARRANTY);
 
     await page.goto(`/en/products/${PRODUCT_WITH_WARRANTY}`);
@@ -442,15 +427,13 @@ test.describe('InsuranceCoveragePanel UI: add coverage → expand → file claim
     await expect(form).toBeVisible({ timeout: 3000 });
 
     // Fill claim form
-    await form.locator('[data-testid="claim-description-input"]').fill(
-      'E2E UI: product damaged in transit',
-    );
-    await form.locator('[data-testid="claim-proof-ref-input"]').fill(
-      'ipfs://QmUIClaimProof001',
-    );
-    await form.locator('[data-testid="claim-claimant-input"]').fill(
-      'GCLAIM1234567890ABCDEFGHIJKLMNOPQRSTU',
-    );
+    await form
+      .locator('[data-testid="claim-description-input"]')
+      .fill('E2E UI: product damaged in transit');
+    await form.locator('[data-testid="claim-proof-ref-input"]').fill('ipfs://QmUIClaimProof001');
+    await form
+      .locator('[data-testid="claim-claimant-input"]')
+      .fill('GCLAIM1234567890ABCDEFGHIJKLMNOPQRSTU');
 
     // Submit
     await form.locator('[data-testid="claim-submit-btn"]').click();
@@ -537,12 +520,8 @@ test.describe('WarrantyPanel UI: view warranty → file claim → status transit
 
     const form = panel.locator('[data-testid="file-claim-form"]');
     await expect(form).toBeVisible({ timeout: 3000 });
-    await expect(
-      form.locator('[data-testid="warranty-claim-description-input"]'),
-    ).toBeVisible();
-    await expect(
-      form.locator('[data-testid="warranty-claim-submit-btn"]'),
-    ).toBeVisible();
+    await expect(form.locator('[data-testid="warranty-claim-description-input"]')).toBeVisible();
+    await expect(form.locator('[data-testid="warranty-claim-submit-btn"]')).toBeVisible();
   });
 });
 // ── Suite 5: AssemblyPanel UI — smart-contract assembly/warranty relationship ─
@@ -594,9 +573,7 @@ test.describe('AssemblyPanel UI: component provenance and warranty relationship'
     const panel = page.locator('[data-testid="assembly-panel"]');
     await expect(panel).toBeVisible({ timeout: 10000 });
 
-    const firstRow = panel
-      .locator('[data-testid="assembly-component-row"]')
-      .first();
+    const firstRow = panel.locator('[data-testid="assembly-component-row"]').first();
     await expect(firstRow).toBeVisible({ timeout: 5000 });
 
     // The row contains a link to the component product page
@@ -625,19 +602,13 @@ test.describe('AssemblyPanel UI: component provenance and warranty relationship'
     await expect(componentList).toBeVisible({ timeout: 3000 });
   });
 
-  test('assembled product (prod-003) also has warranty — both panels coexist', async ({
-    page,
-  }) => {
+  test('assembled product (prod-003) also has warranty — both panels coexist', async ({ page }) => {
     await page.goto(`/en/products/${ASSEMBLED_PRODUCT}`);
     await page.waitForLoadState('networkidle');
 
     // Both panels must be present on the same product page
-    await expect(
-      page.locator('[data-testid="assembly-panel"]'),
-    ).toBeVisible({ timeout: 10000 });
-    await expect(
-      page.locator('[data-testid="warranty-panel"]'),
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-testid="assembly-panel"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-testid="warranty-panel"]')).toBeVisible({ timeout: 10000 });
 
     // Warranty for prod-003 is 1-year — assert it's active
     const warrantyPanel = page.locator('[data-testid="warranty-panel"]');
@@ -645,9 +616,10 @@ test.describe('AssemblyPanel UI: component provenance and warranty relationship'
 
     // Assembly shows components
     const assemblyPanel = page.locator('[data-testid="assembly-panel"]');
-    await expect(
-      assemblyPanel.locator('[data-testid="assembly-component-count"]'),
-    ).toContainText('2 components', { timeout: 5000 });
+    await expect(assemblyPanel.locator('[data-testid="assembly-component-count"]')).toContainText(
+      '2 components',
+      { timeout: 5000 },
+    );
   });
 
   test('component prod-001 has its own warranty — warranty relationship surfaced', async ({
@@ -666,9 +638,9 @@ test.describe('AssemblyPanel UI: component provenance and warranty relationship'
     const assemblyPanel = page.locator('[data-testid="assembly-panel"]');
     if (await assemblyPanel.isVisible().catch(() => false)) {
       // If rendered, it should show no assembly relationship
-      await expect(
-        assemblyPanel.locator('text=No assembly relationship registered'),
-      ).toBeVisible({ timeout: 3000 });
+      await expect(assemblyPanel.locator('text=No assembly relationship registered')).toBeVisible({
+        timeout: 3000,
+      });
     }
   });
 });

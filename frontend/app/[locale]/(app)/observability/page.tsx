@@ -128,7 +128,7 @@ export default function ObservabilityPage() {
   const totalThrottles = Object.values(data.throttleCounts).reduce((s, v) => s + v, 0);
 
   return (
-    <main className="p-4 md:p-6 space-y-8 max-w-7xl mx-auto">
+    <main className="p-4 md:p-6 space-y-8 max-w-7xl mx-auto" data-testid="observability-page">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-[var(--foreground)]">API Observability</h1>
         <span className="text-xs text-[var(--muted)]">

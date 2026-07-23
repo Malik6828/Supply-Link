@@ -1,4 +1,10 @@
-import type { Product, TrackingEvent, ProductAssembly, WarrantyInfo, WarrantyClaim } from '@/lib/types';
+import type {
+  Product,
+  TrackingEvent,
+  ProductAssembly,
+  WarrantyInfo,
+  WarrantyClaim,
+} from '@/lib/types';
 
 export const MOCK_PRODUCTS: Product[] = [
   {

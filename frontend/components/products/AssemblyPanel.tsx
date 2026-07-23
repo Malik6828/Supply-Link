@@ -36,8 +36,11 @@ function fmtDate(ts: number) {
 
 function ComponentRow({ componentId }: { componentId: string }) {
   return (
-    <li className="flex items-center gap-3 py-2 border-b border-[var(--card-border)] last:border-0"
-        data-testid="assembly-component-row" data-component-id={componentId}>
+    <li
+      className="flex items-center gap-3 py-2 border-b border-[var(--card-border)] last:border-0"
+      data-testid="assembly-component-row"
+      data-component-id={componentId}
+    >
       <span className="flex-shrink-0 w-7 h-7 rounded-lg bg-violet-500/10 flex items-center justify-center">
         <Package size={14} className="text-violet-500" aria-hidden />
       </span>
@@ -249,7 +252,11 @@ export function AssemblyPanel({
               </div>
 
               {/* Component list */}
-              <ul className="mb-3" aria-label="Component products" data-testid="assembly-component-list">
+              <ul
+                className="mb-3"
+                aria-label="Component products"
+                data-testid="assembly-component-list"
+              >
                 {assembly.componentIds.map((id) => (
                   <ComponentRow key={id} componentId={id} />
                 ))}

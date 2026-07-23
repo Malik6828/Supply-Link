@@ -33,8 +33,7 @@ import {
 const CLAIM_STATUS_BADGE: Record<ClaimProofStatus, string> = {
   pending:
     'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-300',
-  verified:
-    'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-300',
+  verified: 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-300',
   rejected: 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-400',
 };
 
@@ -47,9 +46,7 @@ function ClaimProofCard({ proof }: { proof: ClaimProof }) {
           <p className="font-medium text-[var(--foreground)] truncate">{proof.description}</p>
           <p className="text-[var(--muted)] mt-0.5">Filed: {filedAt}</p>
           {proof.proofRef && (
-            <p className="text-[var(--muted)] mt-0.5 font-mono truncate">
-              Ref: {proof.proofRef}
-            </p>
+            <p className="text-[var(--muted)] mt-0.5 font-mono truncate">Ref: {proof.proofRef}</p>
           )}
           {proof.verifierNotes && (
             <p className="text-[var(--muted)] mt-0.5 italic">{proof.verifierNotes}</p>
@@ -134,7 +131,10 @@ function CoverageCard({ coverage, productId, onClaimAdded }: CoverageCardProps) 
             aria-hidden="true"
           />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-[var(--foreground)] truncate" data-testid="coverage-provider">
+            <p
+              className="text-sm font-semibold text-[var(--foreground)] truncate"
+              data-testid="coverage-provider"
+            >
               {coverage.provider}
             </p>
             <p className="text-xs text-[var(--muted)] mt-0.5">
@@ -208,7 +208,9 @@ function CoverageCard({ coverage, productId, onClaimAdded }: CoverageCardProps) 
             <form onSubmit={handleAddClaim} className="space-y-2" data-testid="claim-form">
               <p className="text-xs font-semibold text-[var(--foreground)]">New claim proof</p>
               {claimError && (
-                <p className="text-xs text-red-600 dark:text-red-400" data-testid="claim-error">{claimError}</p>
+                <p className="text-xs text-red-600 dark:text-red-400" data-testid="claim-error">
+                  {claimError}
+                </p>
               )}
               <input
                 type="text"
@@ -313,24 +315,69 @@ function AddCoverageForm({ productId, onAdded, onCancel }: AddCoverageFormProps)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 pt-3 border-t border-[var(--card-border)]" data-testid="add-coverage-form">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-3 pt-3 border-t border-[var(--card-border)]"
+      data-testid="add-coverage-form"
+    >
       <p className="text-xs font-semibold text-[var(--foreground)]">Add insurance coverage</p>
       {error && (
-        <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400" data-testid="add-coverage-error">
+        <div
+          className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400"
+          data-testid="add-coverage-error"
+        >
           <AlertCircle size={12} />
           {error}
         </div>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {[
-          { label: 'Provider', value: provider, setter: setProvider, placeholder: 'Acme Insurance' },
-          { label: 'Policy number', value: policyNumber, setter: setPolicyNumber, placeholder: 'POL-12345' },
-          { label: 'Coverage type', value: coverageType, setter: setCoverageType, placeholder: 'product liability' },
-          { label: `Amount (${currency})`, value: coverageAmount, setter: setCoverageAmount, placeholder: '100000', type: 'number' },
+          {
+            label: 'Provider',
+            value: provider,
+            setter: setProvider,
+            placeholder: 'Acme Insurance',
+          },
+          {
+            label: 'Policy number',
+            value: policyNumber,
+            setter: setPolicyNumber,
+            placeholder: 'POL-12345',
+          },
+          {
+            label: 'Coverage type',
+            value: coverageType,
+            setter: setCoverageType,
+            placeholder: 'product liability',
+          },
+          {
+            label: `Amount (${currency})`,
+            value: coverageAmount,
+            setter: setCoverageAmount,
+            placeholder: '100000',
+            type: 'number',
+          },
           { label: 'Currency', value: currency, setter: setCurrency, placeholder: 'USD' },
-          { label: 'Registrar address', value: registeredBy, setter: setRegisteredBy, placeholder: 'G...' },
-          { label: 'Valid from', value: validFrom, setter: setValidFrom, placeholder: '', type: 'date' },
-          { label: 'Valid until (leave blank = no expiry)', value: validUntil, setter: setValidUntil, placeholder: '', type: 'date' },
+          {
+            label: 'Registrar address',
+            value: registeredBy,
+            setter: setRegisteredBy,
+            placeholder: 'G...',
+          },
+          {
+            label: 'Valid from',
+            value: validFrom,
+            setter: setValidFrom,
+            placeholder: '',
+            type: 'date',
+          },
+          {
+            label: 'Valid until (leave blank = no expiry)',
+            value: validUntil,
+            setter: setValidUntil,
+            placeholder: '',
+            type: 'date',
+          },
         ].map(({ label, value, setter, placeholder, type }) => (
           <div key={label}>
             <label className="block text-xs text-[var(--muted)] mb-1">{label}</label>
@@ -419,16 +466,22 @@ export function InsuranceCoveragePanel({ productId, canAdd = false }: InsuranceC
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           {verification.covered ? (
-            <ShieldCheck size={16} className="text-green-600 dark:text-green-400" aria-hidden="true" />
+            <ShieldCheck
+              size={16}
+              className="text-green-600 dark:text-green-400"
+              aria-hidden="true"
+            />
           ) : (
             <ShieldAlert size={16} className="text-[var(--muted)]" aria-hidden="true" />
           )}
-          <h3 className="text-sm font-semibold text-[var(--foreground)]">
-            Insurance Coverage
-          </h3>
+          <h3 className="text-sm font-semibold text-[var(--foreground)]">Insurance Coverage</h3>
           {verification.covered && (
-            <span className="text-xs text-green-700 dark:text-green-400 font-medium" data-testid="insurance-total-coverage">
-              · {formatCoverageAmount(verification.totalCoverageAmount, verification.currency)} covered
+            <span
+              className="text-xs text-green-700 dark:text-green-400 font-medium"
+              data-testid="insurance-total-coverage"
+            >
+              · {formatCoverageAmount(verification.totalCoverageAmount, verification.currency)}{' '}
+              covered
             </span>
           )}
         </div>
@@ -445,14 +498,19 @@ export function InsuranceCoveragePanel({ productId, canAdd = false }: InsuranceC
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 mb-4" data-testid="insurance-error">
+        <div
+          className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 mb-4"
+          data-testid="insurance-error"
+        >
           <AlertCircle size={14} />
           {error}
         </div>
       )}
 
       {!loading && coverages.length === 0 && (
-        <p className="text-sm text-[var(--muted)]" data-testid="insurance-empty">No insurance coverage registered for this product.</p>
+        <p className="text-sm text-[var(--muted)]" data-testid="insurance-empty">
+          No insurance coverage registered for this product.
+        </p>
       )}
 
       {coverages.length > 0 && (
@@ -483,7 +541,10 @@ export function InsuranceCoveragePanel({ productId, canAdd = false }: InsuranceC
       {canAdd && showAddForm && (
         <AddCoverageForm
           productId={productId}
-          onAdded={() => { setShowAddForm(false); load(); }}
+          onAdded={() => {
+            setShowAddForm(false);
+            load();
+          }}
           onCancel={() => setShowAddForm(false)}
         />
       )}
