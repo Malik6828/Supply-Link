@@ -131,26 +131,27 @@ export function RegisterProductForm({ open, onOpenChange }: Props) {
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md bg-[var(--background)] border border-[var(--card-border)] rounded-2xl p-6 shadow-xl">
+        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md bg-[var(--background)] border border-[var(--card-border)] rounded-2xl p-6 shadow-xl" data-testid="register-product-dialog">
           <div className="flex items-center justify-between mb-6">
             <Dialog.Title className="text-lg font-semibold">Register New Product</Dialog.Title>
             <Dialog.Close
               className="p-1 rounded-lg hover:bg-[var(--muted-bg)] transition-colors"
               aria-label="Close dialog"
+              data-testid="register-product-dialog-close"
             >
               <X size={18} aria-hidden />
             </Dialog.Close>
           </div>
 
           {!isOnline && (
-            <div className="mb-4 flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 text-xs">
+            <div className="mb-4 flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 text-xs" data-testid="register-product-offline-notice">
               <WifiOff size={13} />
               You are offline. Registration will be queued and synced when connectivity returns.
             </div>
           )}
 
           {draft && (
-            <div className="mb-4 flex items-center justify-between px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-600 text-xs">
+            <div className="mb-4 flex items-center justify-between px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-600 text-xs" data-testid="register-product-draft-notice">
               <span>Draft restored from a previous session.</span>
               <button
                 type="button"
@@ -159,13 +160,14 @@ export function RegisterProductForm({ open, onOpenChange }: Props) {
                   reset({ id: generateId() });
                 }}
                 className="underline hover:no-underline ml-2"
+                data-testid="register-product-discard-draft"
               >
                 Discard
               </button>
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" data-testid="register-product-form">
             {/* Product ID */}
             <div className="flex flex-col gap-1">
               <label htmlFor="register-product-id" className="text-sm font-medium">
@@ -176,12 +178,14 @@ export function RegisterProductForm({ open, onOpenChange }: Props) {
                   id="register-product-id"
                   {...register('id')}
                   className="flex-1 px-3 py-2 rounded-lg border border-[var(--card-border)] bg-[var(--card)] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  data-testid="register-product-id-input"
                 />
                 <button
                   type="button"
                   onClick={() => setValue('id', generateId())}
                   className="p-2 rounded-lg border border-[var(--card-border)] hover:bg-[var(--muted-bg)] transition-colors"
                   aria-label="Regenerate ID"
+                  data-testid="register-product-regenerate-id"
                 >
                   <RefreshCw size={16} aria-hidden />
                 </button>
@@ -203,6 +207,7 @@ export function RegisterProductForm({ open, onOpenChange }: Props) {
                 {...register('name')}
                 placeholder="e.g. Organic Coffee Beans"
                 className="px-3 py-2 rounded-lg border border-[var(--card-border)] bg-[var(--card)] text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                data-testid="register-product-name-input"
               />
               {errors.name && (
                 <p className="text-xs text-red-500" role="alert">
@@ -221,6 +226,7 @@ export function RegisterProductForm({ open, onOpenChange }: Props) {
                 {...register('origin')}
                 placeholder="e.g. Ethiopia"
                 className="px-3 py-2 rounded-lg border border-[var(--card-border)] bg-[var(--card)] text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                data-testid="register-product-origin-input"
               />
               {errors.origin && (
                 <p className="text-xs text-red-500" role="alert">
@@ -240,6 +246,7 @@ export function RegisterProductForm({ open, onOpenChange }: Props) {
                 rows={3}
                 placeholder="Additional details about the product…"
                 className="px-3 py-2 rounded-lg border border-[var(--card-border)] bg-[var(--card)] text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+                data-testid="register-product-description-input"
               />
             </div>
 
@@ -253,6 +260,7 @@ export function RegisterProductForm({ open, onOpenChange }: Props) {
                   setValue('subcategory', '');
                 }}
                 className="px-3 py-2 rounded-lg border border-[var(--card-border)] bg-[var(--card)] text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                data-testid="register-product-category-select"
               >
                 <option value="">Select a category…</option>
                 {PRODUCT_TAXONOMY.map((cat) => (
@@ -271,6 +279,7 @@ export function RegisterProductForm({ open, onOpenChange }: Props) {
                 {...register('subcategory')}
                 disabled={!selectedCategory}
                 className="px-3 py-2 rounded-lg border border-[var(--card-border)] bg-[var(--card)] text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 disabled:opacity-50"
+                data-testid="register-product-subcategory-select"
               >
                 <option value="">Select a subcategory…</option>
                 {subcategories.map((sub) => (
@@ -291,6 +300,7 @@ export function RegisterProductForm({ open, onOpenChange }: Props) {
               <Dialog.Close
                 className="flex-1 px-4 py-2 rounded-lg border border-[var(--card-border)] text-sm font-medium hover:bg-[var(--muted-bg)] transition-colors"
                 disabled={pending}
+                data-testid="register-product-cancel"
               >
                 Cancel
               </Dialog.Close>
@@ -298,6 +308,7 @@ export function RegisterProductForm({ open, onOpenChange }: Props) {
                 type="submit"
                 disabled={pending}
                 className="flex-1 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                data-testid="register-product-submit"
               >
                 {pending ? 'Registering…' : 'Register Product'}
               </button>

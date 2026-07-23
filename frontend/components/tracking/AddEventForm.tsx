@@ -134,16 +134,16 @@ export function AddEventForm({ productId: initialProductId, onSuccess }: AddEven
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" data-testid="add-event-form">
       {!isOnline && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 text-xs">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 text-xs" data-testid="add-event-offline-notice">
           <WifiOff size={13} />
           You are offline. The event will be queued and submitted when connectivity returns.
         </div>
       )}
 
       {complianceError && (
-        <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 text-xs">
+        <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 text-xs" data-testid="add-event-compliance-error">
           <AlertTriangle size={14} className="mt-0.5 shrink-0" />
           <span>{complianceError}</span>
         </div>
@@ -156,6 +156,7 @@ export function AddEventForm({ productId: initialProductId, onSuccess }: AddEven
           {...register('productId')}
           placeholder="Enter product ID"
           disabled={!!initialProductId}
+          data-testid="add-event-product-id-input"
         />
         {errors.productId && <p className="text-xs text-red-500">{errors.productId.message}</p>}
       </div>
@@ -163,7 +164,11 @@ export function AddEventForm({ productId: initialProductId, onSuccess }: AddEven
       {/* Location */}
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium">Location</label>
-        <Input {...register('location')} placeholder="e.g. Warehouse A, Port of Shanghai" />
+        <Input 
+          {...register('location')} 
+          placeholder="e.g. Warehouse A, Port of Shanghai"
+          data-testid="add-event-location-input"
+        />
         {errors.location && <p className="text-xs text-red-500">{errors.location.message}</p>}
       </div>
 
@@ -175,7 +180,7 @@ export function AddEventForm({ productId: initialProductId, onSuccess }: AddEven
             const cfg = EVENT_TYPE_CONFIG[t];
             const Icon = cfg.icon;
             return (
-              <SelectItem key={t} value={t}>
+              <SelectItem key={t} value={t} data-testid={`add-event-type-${t.toLowerCase()}`}>
                 <span
                   className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.badgeClass}`}
                 >
@@ -199,6 +204,7 @@ export function AddEventForm({ productId: initialProductId, onSuccess }: AddEven
           rows={4}
           placeholder='{"temperature": 25, "humidity": 60}'
           className="px-3 py-2 rounded-lg border border-[var(--card-border)] bg-[var(--card)] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+          data-testid="add-event-metadata-input"
         />
         {errors.metadata && <p className="text-xs text-red-500">{errors.metadata.message}</p>}
       </div>
@@ -210,6 +216,7 @@ export function AddEventForm({ productId: initialProductId, onSuccess }: AddEven
           checked={isPrivate}
           onChange={(e) => setIsPrivate(e.target.checked)}
           className="mt-0.5"
+          data-testid="add-event-private-toggle"
         />
         <span className="flex flex-col">
           <span className="text-sm font-medium">{tp('markPrivate')}</span>
@@ -223,13 +230,13 @@ export function AddEventForm({ productId: initialProductId, onSuccess }: AddEven
         onClear={() => setAttachmentUrl(null)}
       />
 
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" disabled={pending} data-testid="add-event-submit">
         {pending ? 'Adding…' : 'Add Event'}
       </Button>
 
       {/* Post-submit: surface the decryption key + commitment for the user to save */}
       {sealed && (
-        <div className="rounded-lg border border-amber-400/60 bg-amber-50 dark:bg-amber-950/30 p-4 flex flex-col gap-2">
+        <div className="rounded-lg border border-amber-400/60 bg-amber-50 dark:bg-amber-950/30 p-4 flex flex-col gap-2" data-testid="add-event-sealed-metadata">
           <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
             {tp('saveKeyTitle')}
           </p>

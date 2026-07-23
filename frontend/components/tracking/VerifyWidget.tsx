@@ -53,6 +53,7 @@ export function VerifyWidget() {
                 aria-label="Product ID"
                 aria-describedby={error ? "verify-error" : undefined}
                 className="w-full pl-9 pr-4 py-3 rounded-xl border border-[var(--card-border)] bg-[var(--card)] text-[var(--foreground)] placeholder:text-[var(--muted)] text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 transition"
+                data-testid="verify-widget-product-id-input"
               />
             </div>
 
@@ -60,6 +61,7 @@ export function VerifyWidget() {
             <button
               type="submit"
               className="px-5 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-sm font-semibold transition-colors whitespace-nowrap"
+              data-testid="verify-widget-submit-button"
             >
               Verify
             </button>
@@ -70,6 +72,7 @@ export function VerifyWidget() {
               onClick={() => setScannerOpen(true)}
               className="inline-flex items-center justify-center gap-2 px-5 py-3 border border-[var(--card-border)] bg-[var(--card)] hover:border-violet-500/50 text-[var(--foreground)] rounded-xl text-sm font-semibold transition-colors whitespace-nowrap"
               aria-label="Open QR scanner"
+              data-testid="verify-widget-scan-qr-button"
             >
               <QrCode size={16} aria-hidden="true" />
               Scan QR
@@ -77,7 +80,7 @@ export function VerifyWidget() {
           </div>
 
           {error && (
-            <p id="verify-error" role="alert" className="mt-2 text-xs text-red-500">
+            <p id="verify-error" role="alert" className="mt-2 text-xs text-red-500" data-testid="verify-widget-error">
               {error}
             </p>
           )}
