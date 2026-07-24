@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useStore } from '@/lib/state/store';
+import { useProductsList } from '@/lib/state/selectors/products';
+import { useEventsList } from '@/lib/state/selectors/events';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Calendar, Download, FileJson, FileText } from 'lucide-react';
@@ -114,6 +115,7 @@ export function AuditReportBuilder() {
             onClick={handleGenerateReport}
             disabled={isGenerating}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            data-testid="generate-report-button"
           >
             {isGenerating ? t('generating') : t('generateReport')}
           </Button>
@@ -122,7 +124,7 @@ export function AuditReportBuilder() {
 
       {/* Report Results */}
       {report && (
-        <Card className="p-6">
+        <Card className="p-6" data-testid="report-summary">
           <h3 className="text-lg font-semibold mb-4">{t('reportSummary')}</h3>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -171,6 +173,7 @@ export function AuditReportBuilder() {
             <Button
               onClick={() => downloadReport(report, 'json')}
               className="flex-1 bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-2"
+              data-testid="export-json-button"
             >
               <FileJson className="w-4 h-4" />
               {t('exportJson')}
@@ -178,6 +181,7 @@ export function AuditReportBuilder() {
             <Button
               onClick={() => downloadReport(report, 'csv')}
               className="flex-1 bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-2"
+              data-testid="export-csv-button"
             >
               <FileText className="w-4 h-4" />
               {t('exportCsv')}

@@ -50,11 +50,12 @@ export default defineConfig({
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
-    // Inject the test API keys into the server process so auth.ts can validate them.
+    // Inject the test API keys and mock mode flag into the server process
     env: {
       PARTNER_API_KEY: process.env.PARTNER_API_KEY ?? 'test-partner-key-e2e',
       INTERNAL_API_KEY: process.env.INTERNAL_API_KEY ?? 'test-internal-key-e2e',
       TRUSTED_PROXY: 'true',
+      NEXT_PUBLIC_MOCK_WALLET: 'true',
     },
   },
 });

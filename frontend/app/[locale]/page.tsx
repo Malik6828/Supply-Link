@@ -11,39 +11,39 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       {/* Nav */}
-      <nav className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
-        <span className="text-xl font-bold tracking-tight">Supply-Link</span>
+      <nav className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto" data-testid="landing-nav">
+        <span className="text-xl font-bold tracking-tight" data-testid="landing-brand">Supply-Link</span>
         <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="text-sm text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">
+          <Link href="/dashboard" className="text-sm text-[var(--muted)] hover:text-[var(--foreground)] transition-colors" data-testid="nav-dashboard-link">
             {t("nav.dashboard")}
           </Link>
-          <Link href="/dashboard" className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-medium transition-colors">
+          <Link href="/dashboard" className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-medium transition-colors" data-testid="nav-get-started-button">
             {t("nav.getStarted")}
           </Link>
         </div>
       </nav>
 
       {/* Hero */}
-      <section className="relative px-6 py-24 md:py-36 max-w-7xl mx-auto text-center overflow-hidden">
+      <section className="relative px-6 py-24 md:py-36 max-w-7xl mx-auto text-center overflow-hidden" data-testid="hero-section">
         <div className="absolute inset-0 -z-10 flex items-center justify-center pointer-events-none">
           <div className="w-[600px] h-[600px] rounded-full bg-violet-500/10 blur-3xl" />
         </div>
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-400 text-xs font-medium mb-6">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-400 text-xs font-medium mb-6" data-testid="hero-badge">
           <Zap size={12} />
           {t("hero.badge")}
         </div>
-        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
+        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight" data-testid="hero-title">
           {t("hero.title")}{" "}
           <span className="text-violet-500">{t("hero.titleHighlight")}</span>
         </h1>
-        <p className="text-lg md:text-xl text-[var(--muted)] max-w-2xl mx-auto mb-10">
+        <p className="text-lg md:text-xl text-[var(--muted)] max-w-2xl mx-auto mb-10" data-testid="hero-subtitle">
           {t("hero.subtitle")}
         </p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link href="/dashboard" className="flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-semibold transition-colors">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4" data-testid="hero-cta-section">
+          <Link href="/dashboard" className="flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-semibold transition-colors" data-testid="hero-cta-button">
             {t("hero.cta")} <ArrowRight size={16} />
           </Link>
-          <Link href="/verify/demo" className="flex items-center gap-2 px-6 py-3 border border-[var(--card-border)] hover:border-violet-500/50 rounded-xl font-semibold transition-colors">
+          <Link href="/verify/demo" className="flex items-center gap-2 px-6 py-3 border border-[var(--card-border)] hover:border-violet-500/50 rounded-xl font-semibold transition-colors" data-testid="hero-verify-button">
             <Scan size={16} /> {t("hero.verify")}
           </Link>
         </div>

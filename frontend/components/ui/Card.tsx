@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { clsx } from 'clsx';
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   className?: string;
 }
@@ -21,10 +21,11 @@ interface CardFooterProps {
   className?: string;
 }
 
-export function Card({ children, className }: CardProps) {
+export function Card({ children, className, ...props }: CardProps) {
   return (
     <div
       className={clsx('bg-[var(--card)] border border-[var(--card-border)] rounded-lg', className)}
+      {...props}
     >
       {children}
     </div>

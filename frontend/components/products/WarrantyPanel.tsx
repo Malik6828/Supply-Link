@@ -287,7 +287,11 @@ function FileClaimForm({ productId, onSuccess, onCancel }: FileClaimFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3" data-testid="file-claim-form">
+    <form
+      onSubmit={handleSubmit}
+      className="mt-4 flex flex-col gap-3"
+      data-testid="file-claim-form"
+    >
       <div className="flex flex-col gap-1">
         <label htmlFor="claim-description" className="text-xs font-medium">
           Issue description
@@ -400,7 +404,9 @@ function ClaimsList({ claims, productId, isOwner, onStatusUpdate }: ClaimsListPr
                 {cfg.label}
               </span>
             </div>
-            <p className="text-[var(--foreground)] mb-1" data-testid="warranty-claim-description">{claim.description}</p>
+            <p className="text-[var(--foreground)] mb-1" data-testid="warranty-claim-description">
+              {claim.description}
+            </p>
             {claim.proofRef && (
               <a
                 href={claim.proofRef}

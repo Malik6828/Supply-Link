@@ -45,6 +45,9 @@ function RegistryRecordCard({
 
   return (
     <div
+      data-testid="cert-registry-record"
+      data-record-id={record.id}
+      data-revoked={isRevoked ? 'true' : 'false'}
       className={`rounded-lg border p-4 transition-colors ${
         isRevoked
           ? 'border-[var(--card-border)] opacity-60 bg-[var(--muted-bg)]'
@@ -59,12 +62,17 @@ function RegistryRecordCard({
             <ShieldCheck size={16} className="shrink-0 mt-0.5 text-green-600 dark:text-green-400" />
           )}
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-[var(--foreground)] truncate">
+            <p
+              data-testid="cert-record-type"
+              className="text-sm font-semibold text-[var(--foreground)] truncate"
+            >
               {getCertificationLabel(record.certType)}
             </p>
             <p className="text-xs text-[var(--muted)] mt-0.5">
               External ID:{' '}
-              <span className="font-mono">{record.externalCertId}</span>
+              <span className="font-mono" data-testid="cert-record-external-id">
+                {record.externalCertId}
+              </span>
             </p>
             <p className="text-xs text-[var(--muted)]">
               Issued: {dateFmt.format(new Date(record.issuedAt))}
@@ -77,7 +85,10 @@ function RegistryRecordCard({
 
         <div className="flex items-center gap-2 shrink-0">
           {isRevoked && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600 border border-red-300 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
+            <span
+              data-testid="cert-record-revoked-badge"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600 border border-red-300 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"
+            >
               <ShieldX size={10} />
               Revoked
             </span>
@@ -86,6 +97,7 @@ function RegistryRecordCard({
           {!isRevoked && onVerify && (
             <button
               type="button"
+              data-testid="cert-verify-button"
               onClick={() => onVerify(record.id)}
               disabled={verifying}
               className="text-xs px-2 py-1 rounded border border-[var(--card-border)] text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--foreground)] transition-colors disabled:opacity-40"
@@ -108,6 +120,8 @@ function RegistryRecordCard({
       {/* Verification result */}
       {verificationResult && (
         <div
+          data-testid="cert-verification-result"
+          data-valid={verificationResult.valid ? 'true' : 'false'}
           className={`mt-3 flex items-center gap-2 text-xs rounded-md px-3 py-2 ${
             verificationResult.valid
               ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
@@ -123,7 +137,12 @@ function RegistryRecordCard({
             ? 'Certification verified — record is active and issuer is registered.'
             : 'Verification failed — record has been revoked.'}
           {verificationResult.issuer && (
-            <span className="ml-auto font-medium">{verificationResult.issuer.name}</span>
+            <span
+              data-testid="cert-verification-issuer"
+              className="ml-auto font-medium"
+            >
+              {verificationResult.issuer.name}
+            </span>
           )}
         </div>
       )}
@@ -133,11 +152,15 @@ function RegistryRecordCard({
         <div className="mt-3 pt-3 border-t border-[var(--card-border)] space-y-1.5 text-xs text-[var(--muted)]">
           <div>
             <span className="font-medium text-[var(--foreground)]">Record ID:</span>{' '}
-            <span className="font-mono">{record.id}</span>
+            <span className="font-mono" data-testid="cert-record-id">
+              {record.id}
+            </span>
           </div>
           <div>
             <span className="font-medium text-[var(--foreground)]">Issuer address:</span>{' '}
-            <span className="font-mono break-all">{record.issuerAddress}</span>
+            <span className="font-mono break-all" data-testid="cert-record-issuer-address">
+              {record.issuerAddress}
+            </span>
           </div>
           <div>
             <span className="font-medium text-[var(--foreground)]">Document hash:</span>{' '}
@@ -215,14 +238,17 @@ export function CertificationRegistryPanel({ productId, locale }: CertificationR
   const displayedRecords = showRevoked ? records : activeRecords;
 
   return (
-    <section aria-label="Certification registry">
+    <section aria-label="Certification registry" data-testid="cert-registry-panel">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <ShieldCheck size={16} className="text-[var(--muted)]" />
           <h3 className="text-sm font-semibold text-[var(--foreground)]">
             Certification Registry
             {activeRecords.length > 0 && (
-              <span className="ml-2 text-xs font-normal text-[var(--muted)]">
+              <span
+                data-testid="cert-registry-active-count"
+                className="ml-2 text-xs font-normal text-[var(--muted)]"
+              >
                 ({activeRecords.length} active)
               </span>
             )}
@@ -230,6 +256,7 @@ export function CertificationRegistryPanel({ productId, locale }: CertificationR
         </div>
         <button
           type="button"
+          data-testid="cert-registry-refresh"
           onClick={() => void load()}
           disabled={loading}
           className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors disabled:opacity-40"
@@ -240,20 +267,23 @@ export function CertificationRegistryPanel({ productId, locale }: CertificationR
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 mb-4">
+        <div
+          data-testid="cert-registry-error"
+          className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 mb-4"
+        >
           <AlertCircle size={14} />
           {error}
         </div>
       )}
 
       {!loading && !error && records.length === 0 && (
-        <p className="text-sm text-[var(--muted)]">
+        <p data-testid="cert-registry-empty" className="text-sm text-[var(--muted)]">
           No certification registry records for this product.
         </p>
       )}
 
       {records.length > 0 && (
-        <div className="space-y-3">
+        <div data-testid="cert-registry-records-list" className="space-y-3">
           <p className="text-xs text-[var(--muted)]">
             Registry records link this product to external certificates issued by registered
             third-party bodies. Click Verify to confirm authenticity on-chain.
@@ -273,6 +303,7 @@ export function CertificationRegistryPanel({ productId, locale }: CertificationR
           {revokedRecords.length > 0 && (
             <button
               type="button"
+              data-testid="cert-registry-toggle-revoked"
               onClick={() => setShowRevoked((v) => !v)}
               className="text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
             >

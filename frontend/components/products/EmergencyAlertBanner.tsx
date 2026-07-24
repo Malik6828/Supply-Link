@@ -76,14 +76,29 @@ function SingleAlertBanner({ alert, onAcknowledge, onDismiss }: SingleAlertBanne
               {severityLabel} Alert
             </span>
             <span className="text-xs opacity-60">·</span>
-            <span className="text-xs opacity-60" data-testid={`emergency-alert-timestamp-${alert.id}`}>{createdAt}</span>
+            <span
+              className="text-xs opacity-60"
+              data-testid={`emergency-alert-timestamp-${alert.id}`}
+            >
+              {createdAt}
+            </span>
           </div>
 
-          <p className="font-semibold text-sm mt-0.5" data-testid={`emergency-alert-title-${alert.id}`}>{alert.title}</p>
+          <p
+            className="font-semibold text-sm mt-0.5"
+            data-testid={`emergency-alert-title-${alert.id}`}
+          >
+            {alert.title}
+          </p>
 
           {/* Expandable message */}
           {expanded && (
-            <p className="text-sm mt-1 opacity-90" data-testid={`emergency-alert-message-${alert.id}`}>{alert.message}</p>
+            <p
+              className="text-sm mt-1 opacity-90"
+              data-testid={`emergency-alert-message-${alert.id}`}
+            >
+              {alert.message}
+            </p>
           )}
 
           {/* Action row */}

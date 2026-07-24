@@ -29,23 +29,39 @@ function RevocationEntryCard({ entry }: RevocationEntryCardProps) {
   const revokedAt = new Date(entry.revokedAt).toLocaleString();
 
   return (
-    <div className="rounded-lg border border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-950/20 p-3">
+    <div
+      data-testid="revocation-entry"
+      data-subject-id={entry.subjectId}
+      data-type={entry.type}
+      className="rounded-lg border border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-950/20 p-3"
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-2 min-w-0">
           <ShieldX size={14} className="shrink-0 mt-0.5 text-red-500" aria-hidden="true" />
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-semibold text-red-700 dark:text-red-400">
+              <span
+                data-testid="revocation-type-label"
+                className="text-xs font-semibold text-red-700 dark:text-red-400"
+              >
                 {TYPE_LABELS[entry.type]}
               </span>
               <span className="text-xs text-[var(--muted)]">·</span>
-              <span className="text-xs text-[var(--muted)]">{revokedAt}</span>
+              <span
+                data-testid="revocation-timestamp"
+                className="text-xs text-[var(--muted)]"
+              >
+                {revokedAt}
+              </span>
             </div>
-            <p className="text-xs font-mono text-[var(--foreground)] mt-0.5 truncate">
+            <p
+              data-testid="revocation-subject-id"
+              className="text-xs font-mono text-[var(--foreground)] mt-0.5 truncate"
+            >
               {entry.subjectId}
             </p>
             {entry.reason && (
-              <p className="text-xs text-[var(--muted)] mt-0.5">
+              <p data-testid="revocation-reason" className="text-xs text-[var(--muted)] mt-0.5">
                 <span className="font-medium">Reason:</span> {entry.reason}
               </p>
             )}
@@ -66,11 +82,18 @@ function RevocationEntryCard({ entry }: RevocationEntryCardProps) {
         <div className="mt-2 pt-2 border-t border-red-200 dark:border-red-800 space-y-1 text-xs text-[var(--muted)]">
           <div>
             <span className="font-medium text-[var(--foreground)]">Record ID:</span>{' '}
-            <span className="font-mono">{entry.id}</span>
+            <span className="font-mono" data-testid="revocation-record-id">
+              {entry.id}
+            </span>
           </div>
           <div>
             <span className="font-medium text-[var(--foreground)]">Revoked by:</span>{' '}
-            <span className="font-mono break-all">{entry.revokedBy}</span>
+            <span
+              className="font-mono break-all"
+              data-testid="revocation-revoked-by"
+            >
+              {entry.revokedBy}
+            </span>
           </div>
         </div>
       )}
@@ -121,11 +144,18 @@ function RevokeForm({ productId, onRevoked }: RevokeFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 pt-3 border-t border-[var(--card-border)]">
+    <form
+      data-testid="revoke-credential-form"
+      onSubmit={handleSubmit}
+      className="space-y-3 pt-3 border-t border-[var(--card-border)]"
+    >
       <p className="text-xs font-semibold text-[var(--foreground)]">Revoke a credential</p>
 
       {error && (
-        <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
+        <div
+          data-testid="revoke-form-error"
+          className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400"
+        >
           <AlertCircle size={12} />
           {error}
         </div>
@@ -138,6 +168,7 @@ function RevokeForm({ productId, onRevoked }: RevokeFormProps) {
           </label>
           <input
             id="rev-subject-id"
+            data-testid="revoke-subject-id-input"
             type="text"
             value={subjectId}
             onChange={(e) => setSubjectId(e.target.value)}
@@ -153,6 +184,7 @@ function RevokeForm({ productId, onRevoked }: RevokeFormProps) {
           </label>
           <select
             id="rev-type"
+            data-testid="revoke-type-select"
             value={type}
             onChange={(e) => setType(e.target.value as RevocationType)}
             className="w-full text-xs rounded border border-[var(--card-border)] bg-[var(--background)] px-2 py-1.5 text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
@@ -169,6 +201,7 @@ function RevokeForm({ productId, onRevoked }: RevokeFormProps) {
           </label>
           <input
             id="rev-by"
+            data-testid="revoke-by-input"
             type="text"
             value={revokedBy}
             onChange={(e) => setRevokedBy(e.target.value)}
@@ -184,6 +217,7 @@ function RevokeForm({ productId, onRevoked }: RevokeFormProps) {
           </label>
           <input
             id="rev-reason"
+            data-testid="revoke-reason-input"
             type="text"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
@@ -195,6 +229,7 @@ function RevokeForm({ productId, onRevoked }: RevokeFormProps) {
 
       <button
         type="submit"
+        data-testid="revoke-submit-button"
         disabled={submitting}
         className="text-xs font-semibold px-3 py-1.5 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
       >
@@ -242,14 +277,17 @@ export function RevocationRegistryPanel({
   }, [load]);
 
   return (
-    <section aria-label="Revocation registry">
+    <section aria-label="Revocation registry" data-testid="revocation-registry-panel">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <ShieldX size={16} className="text-[var(--muted)]" aria-hidden="true" />
           <h3 className="text-sm font-semibold text-[var(--foreground)]">
             Revocation Registry
             {entries.length > 0 && (
-              <span className="ml-2 text-xs font-normal text-red-600 dark:text-red-400">
+              <span
+                data-testid="revocation-registry-count"
+                className="ml-2 text-xs font-normal text-red-600 dark:text-red-400"
+              >
                 ({entries.length} revoked)
               </span>
             )}
@@ -257,6 +295,7 @@ export function RevocationRegistryPanel({
         </div>
         <button
           type="button"
+          data-testid="revocation-registry-refresh"
           onClick={load}
           disabled={loading}
           className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors disabled:opacity-40"
@@ -267,21 +306,27 @@ export function RevocationRegistryPanel({
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 mb-4">
+        <div
+          data-testid="revocation-registry-error"
+          className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 mb-4"
+        >
           <AlertCircle size={14} />
           {error}
         </div>
       )}
 
       {!loading && entries.length === 0 && (
-        <div className="flex items-center gap-2 text-sm text-[var(--muted)]">
+        <div
+          data-testid="revocation-registry-empty"
+          className="flex items-center gap-2 text-sm text-[var(--muted)]"
+        >
           <ShieldCheck size={14} className="text-green-600 dark:text-green-400" />
           No revoked credentials for this product.
         </div>
       )}
 
       {entries.length > 0 && (
-        <div className="space-y-2">
+        <div data-testid="revocation-registry-entries" className="space-y-2">
           {entries.map((entry) => (
             <RevocationEntryCard key={entry.id} entry={entry} />
           ))}

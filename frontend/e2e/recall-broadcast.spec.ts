@@ -203,9 +203,7 @@ test.describe('E2E: Recall Broadcast', () => {
   /**
    * 5. Validation – missing / invalid fields are rejected.
    */
-  test('POST /api/v1/products/recall/broadcast → 400 on missing productId', async ({
-    request,
-  }) => {
+  test('POST /api/v1/products/recall/broadcast → 400 on missing productId', async ({ request }) => {
     const res = await request.post('/api/v1/products/recall/broadcast', {
       headers: AUTH_HEADERS,
       data: {
@@ -233,9 +231,7 @@ test.describe('E2E: Recall Broadcast', () => {
     expect(res.status()).toBe(400);
   });
 
-  test('POST /api/v1/products/recall/broadcast → 404 on unknown productId', async ({
-    request,
-  }) => {
+  test('POST /api/v1/products/recall/broadcast → 404 on unknown productId', async ({ request }) => {
     const res = await request.post('/api/v1/products/recall/broadcast', {
       headers: AUTH_HEADERS,
       data: {
@@ -406,12 +402,9 @@ test.describe('E2E: Recall Escalation', () => {
     const { escalation } = await createRes.json();
 
     // Advance
-    const advanceRes = await request.patch(
-      `/api/product/recall/escalation/${escalation.id}`,
-      {
-        data: { actor: 'e2e-reviewer', note: 'Under review by QA team' },
-      },
-    );
+    const advanceRes = await request.patch(`/api/product/recall/escalation/${escalation.id}`, {
+      data: { actor: 'e2e-reviewer', note: 'Under review by QA team' },
+    });
     expect(advanceRes.status()).toBe(200);
 
     const { escalation: advanced } = await advanceRes.json();
@@ -470,9 +463,7 @@ test.describe('E2E: Recall Escalation', () => {
       });
     }
 
-    const listRes = await request.get(
-      `/api/product/recall/escalation?productId=${productId}`,
-    );
+    const listRes = await request.get(`/api/product/recall/escalation?productId=${productId}`);
     expect(listRes.status()).toBe(200);
 
     const { escalations, total } = await listRes.json();

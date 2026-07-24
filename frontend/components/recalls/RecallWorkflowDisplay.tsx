@@ -17,7 +17,12 @@ export function RecallWorkflowDisplay({ workflow }: RecallWorkflowDisplayProps) 
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-lg">Recall Workflow</h3>
           <div className="text-right">
-            <p className="text-2xl font-bold text-gray-900" data-testid="recall-completion-percentage">{workflow.completion_percentage}%</p>
+            <p
+              className="text-2xl font-bold text-gray-900"
+              data-testid="recall-completion-percentage"
+            >
+              {workflow.completion_percentage}%
+            </p>
             <p className="text-xs text-gray-600">Complete</p>
           </div>
         </div>
@@ -58,7 +63,9 @@ export function RecallWorkflowDisplay({ workflow }: RecallWorkflowDisplayProps) 
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium" data-testid={`recall-stage-type-${stage.stage_id}`}>{stage.stage_type}</p>
+                  <p className="font-medium" data-testid={`recall-stage-type-${stage.stage_id}`}>
+                    {stage.stage_type}
+                  </p>
                   <p className="text-xs opacity-75">{getJurisdictionName(stage.jurisdiction)}</p>
                 </div>
                 <p className="text-xs opacity-75">

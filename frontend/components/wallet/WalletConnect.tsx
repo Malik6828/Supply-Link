@@ -94,17 +94,18 @@ export function WalletConnect() {
 
   if (walletAddress) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2" data-testid="wallet-status-connected">
         <button
           onClick={() => window.open(accountUrl(walletAddress), '_blank', 'noopener,noreferrer')}
           className="text-sm font-mono text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 flex items-center gap-1 transition-colors"
           title={t('viewOnExplorer')}
+          data-testid="wallet-address-display"
         >
           {walletAddress.slice(0, 6)}…{walletAddress.slice(-4)}
           <ExternalLink size={14} />
         </button>
         {xlmBalance && (
-          <span className="text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+          <span className="text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded" data-testid="wallet-balance-display">
             {formatBalance(xlmBalance)}
           </span>
         )}
@@ -113,6 +114,7 @@ export function WalletConnect() {
           className="p-2 rounded hover:bg-[var(--muted-bg)] text-[var(--foreground)]"
           aria-label={t('disconnect')}
           title={t('disconnect')}
+          data-testid="wallet-disconnect-button"
         >
           <LogOut size={18} />
         </button>
@@ -146,6 +148,7 @@ export function WalletConnect() {
         onClick={connect}
         disabled={loading}
         className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm disabled:opacity-50 hover:bg-violet-700 transition-colors"
+        data-testid="wallet-connect-button"
       >
         {loading ? t('connecting') : t('connectFreighter')}
       </button>

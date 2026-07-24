@@ -33,10 +33,9 @@ export function generateAuditReport(
   events: TrackingEvent[],
   filter: AuditReportFilter,
 ): AuditReportData {
-  // Filter events by date range
+  // Filter events by date range (timestamps are stored in milliseconds)
   const filteredEvents = events.filter((event) => {
-    const eventTime = event.timestamp * 1000; // Convert to milliseconds
-    return eventTime >= filter.startDate && eventTime <= filter.endDate;
+    return event.timestamp >= filter.startDate && event.timestamp <= filter.endDate;
   });
 
   // Filter by event types if specified
