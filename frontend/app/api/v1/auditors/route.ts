@@ -12,7 +12,7 @@ import { apiError, withCorrelationId, ErrorCode } from '@/lib/api/errors';
 import { applyRateLimit, RATE_LIMIT_PRESETS } from '@/lib/api/rateLimit';
 import { authenticateApiRequest } from '@/lib/api/auth';
 import { recordRequest } from '@/lib/api/metrics';
-import { MOCK_AUDITORS } from '@/lib/mock/auditors';
+import { getAuditorRepository } from '@/lib/data';
 import type { Auditor, PaginatedResponse } from '@/lib/types';
 
 export function OPTIONS(request: NextRequest) {
@@ -28,7 +28,7 @@ async function listAuditors(req: NextRequest): Promise<NextResponse> {
     return apiError(req, 400, ErrorCode.VALIDATION_ERROR, 'Invalid offset or limit');
   }
 
-  const all = activeOnly ? MOCK_AUDITORS.filter((a) => a.active) : MOCK_AUDITORS;
+  const all = await getAuditorRepository().list({ activeOnly });
   const items = all.slice(offset, offset + limit);
 
   const response: PaginatedResponse<Auditor> = {
@@ -59,7 +59,8 @@ async function registerAuditor(req: NextRequest, rawBody: string): Promise<NextR
   }
 
   // Check for duplicate
-  const existing = MOCK_AUDITORS.find((a) => a.address === body.address);
+  const auditorRepository = getAuditorRepository();
+  const existing = await auditorRepository.getByAddress(body.address);
   if (existing) {
     return apiError(req, 409, ErrorCode.VALIDATION_ERROR, 'Auditor already registered');
   }
@@ -72,7 +73,7 @@ async function registerAuditor(req: NextRequest, rawBody: string): Promise<NextR
   };
 
   // TODO: Persist via Soroban contract call: register_auditor(address, name)
-  MOCK_AUDITORS.push(newAuditor);
+  await auditorRepository.create(newAuditor);
 
   return withCors(req, withCorrelationId(req, NextResponse.json(newAuditor, { status: 201 })));
 }

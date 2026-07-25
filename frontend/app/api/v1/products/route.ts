@@ -13,7 +13,7 @@ import { apiError, withCorrelationId, ErrorCode } from '@/lib/api/errors';
 import { applyRateLimit, RATE_LIMIT_PRESETS } from '@/lib/api/rateLimit';
 import { authenticateApiRequest } from '@/lib/api/auth';
 import { withIdempotency } from '@/lib/api/idempotency';
-import { getAllProducts, MOCK_PRODUCTS, getProductById } from '@/lib/mock/products';
+import { getProductRepository } from '@/lib/data';
 import { recordRequest } from '@/lib/api/metrics';
 import type { Product, PaginatedResponse } from '@/lib/types';
 
@@ -29,12 +29,11 @@ async function listProducts(req: NextRequest, apiKey: string): Promise<NextRespo
     return apiError(req, 400, ErrorCode.VALIDATION_ERROR, 'Invalid offset or limit');
   }
 
-  const allProducts = getAllProducts();
-  const items = allProducts.slice(offset, offset + limit);
+  const page = await getProductRepository().list({ offset, limit });
 
   const response: PaginatedResponse<Product> = {
-    items,
-    total: allProducts.length,
+    items: page.items,
+    total: page.total,
     offset,
     limit,
   };
@@ -100,8 +99,7 @@ async function registerProduct(
     ],
   };
 
-  // TODO: Persist to database instead of mock
-  MOCK_PRODUCTS.push(newProduct);
+  await getProductRepository().create(newProduct);
 
   // Notify webhooks of the new product registration
   try {

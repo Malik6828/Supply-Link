@@ -19,7 +19,7 @@ import { apiError, withCorrelationId, ErrorCode } from '@/lib/api/errors';
 import { applyRateLimit, RATE_LIMIT_PRESETS } from '@/lib/api/rateLimit';
 import { authenticateApiRequest } from '@/lib/api/auth';
 import { searchProducts } from '@/lib/services/searchService';
-import { getAllProducts } from '@/lib/mock/products';
+import { getProductRepository } from '@/lib/data';
 import { recordRequest } from '@/lib/api/metrics';
 
 export function OPTIONS(request: NextRequest) {
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     limit: typeof body.limit === 'number' ? body.limit : 50,
   };
 
-  const products = getAllProducts();
+  const products = await getProductRepository().listAll();
   const result = searchProducts(products, query);
 
   recordRequest('POST /api/v1/products/search', 200, Date.now() - start);

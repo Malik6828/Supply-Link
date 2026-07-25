@@ -16,8 +16,9 @@ import { apiError, withCorrelationId, ErrorCode } from '@/lib/api/errors';
 import { applyRateLimit, RATE_LIMIT_PRESETS } from '@/lib/api/rateLimit';
 import { authenticateApiRequest } from '@/lib/api/auth';
 import { generateTimelineExport, generateBatchExport } from '@/lib/services/exportService';
-import { getAllProducts, getProductById, MOCK_EVENTS } from '@/lib/mock/products';
+import { getEventRepository, getProductRepository } from '@/lib/data';
 import { recordRequest } from '@/lib/api/metrics';
+import type { Product } from '@/lib/types';
 
 export function OPTIONS(request: NextRequest) {
   return handleOptions(request);
@@ -63,25 +64,30 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const format = (body.format === 'csv' ? 'csv' : 'json') as 'csv' | 'json';
   const productIds = body.productIds as string[];
 
-  const products = productIds.map((id) => getProductById(id)).filter((p) => p !== undefined);
+  const productRepository = getProductRepository();
+  const products = (
+    await Promise.all(productIds.map((id) => productRepository.getById(id)))
+  ).filter((p): p is Product => p !== null);
 
   if (products.length === 0) {
     return apiError(request, 400, ErrorCode.VALIDATION_ERROR, 'No valid products found');
   }
+
+  const allEvents = await getEventRepository().listAll();
 
   let content: string;
   let contentType: string;
   let filename: string;
 
   if (products.length === 1) {
-    const exp = generateTimelineExport(products[0], MOCK_EVENTS, format);
+    const exp = generateTimelineExport(products[0], allEvents, format);
     content =
       format === 'json'
         ? JSON.stringify(exp, null, 2)
-        : generateBatchExport(products, MOCK_EVENTS, format);
+        : generateBatchExport(products, allEvents, format);
     filename = `timeline-${products[0].id}-${Date.now()}.${format}`;
   } else {
-    content = generateBatchExport(products, MOCK_EVENTS, format);
+    content = generateBatchExport(products, allEvents, format);
     filename = `timeline-batch-${Date.now()}.${format}`;
   }
 

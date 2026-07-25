@@ -21,7 +21,7 @@ import {
   getAllBroadcasts,
   getActiveBroadcasts,
 } from '@/lib/services/recallBroadcastService';
-import { getProductById } from '@/lib/mock/products';
+import { getProductRepository } from '@/lib/data';
 import { recordRequest } from '@/lib/api/metrics';
 
 export function OPTIONS(request: NextRequest) {
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const product = getProductById(body.productId as string);
+  const product = await getProductRepository().getById(body.productId as string);
   if (!product) {
     return apiError(request, 404, ErrorCode.NOT_FOUND, 'Product not found');
   }

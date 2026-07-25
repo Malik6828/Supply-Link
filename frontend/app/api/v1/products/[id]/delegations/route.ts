@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withCors, handleOptions } from '@/lib/api/cors';
 import { apiError, withCorrelationId, ErrorCode } from '@/lib/api/errors';
 import { authenticateApiRequest } from '@/lib/api/auth';
-import { getProductById } from '@/lib/mock/products';
+import { getProductRepository } from '@/lib/data';
 import { recordApprovalEvent } from '@/lib/api/approvalLog';
 import { delegationStore } from '@/lib/services/delegationStore';
 import type { Delegation } from '@/lib/types';
@@ -26,7 +26,7 @@ export async function GET(
   if (auth.error) return auth.error;
 
   const { id } = await params;
-  if (!getProductById(id)) {
+  if (!(await getProductRepository().getById(id))) {
     return apiError(request, 404, ErrorCode.VALIDATION_ERROR, `Product not found: ${id}`);
   }
 
@@ -43,7 +43,7 @@ export async function POST(
   if (auth.error) return auth.error;
 
   const { id } = await params;
-  if (!getProductById(id)) {
+  if (!(await getProductRepository().getById(id))) {
     return apiError(request, 404, ErrorCode.VALIDATION_ERROR, `Product not found: ${id}`);
   }
 

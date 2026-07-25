@@ -31,8 +31,9 @@ import { apiError, withCorrelationId, ErrorCode } from '@/lib/api/errors';
 import { applyRateLimit, RATE_LIMIT_PRESETS } from '@/lib/api/rateLimit';
 import { authenticateApiRequest } from '@/lib/api/auth';
 import { compareProducts } from '@/lib/services/comparisonService';
-import { getAllProducts, getProductById, MOCK_EVENTS } from '@/lib/mock/products';
+import { getEventRepository, getProductRepository } from '@/lib/data';
 import { recordRequest } from '@/lib/api/metrics';
+import type { Product } from '@/lib/types';
 
 export function OPTIONS(request: NextRequest) {
   return handleOptions(request);
@@ -76,13 +77,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const productIds = body.productIds as string[];
-  const products = productIds.map((id) => getProductById(id)).filter((p) => p !== undefined);
+  const productRepository = getProductRepository();
+  const products = (
+    await Promise.all(productIds.map((id) => productRepository.getById(id)))
+  ).filter((p): p is Product => p !== null);
 
   if (products.length < 2) {
     return apiError(request, 400, ErrorCode.VALIDATION_ERROR, 'At least 2 valid products required');
   }
 
-  const result = compareProducts(products, MOCK_EVENTS);
+  const result = compareProducts(products, await getEventRepository().listAll());
 
   const response = {
     products: result.products,

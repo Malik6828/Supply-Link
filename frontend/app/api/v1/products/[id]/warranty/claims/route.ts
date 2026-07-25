@@ -13,7 +13,7 @@ import { apiError, withCorrelationId, ErrorCode } from '@/lib/api/errors';
 import { applyRateLimit, RATE_LIMIT_PRESETS } from '@/lib/api/rateLimit';
 import { authenticateApiRequest } from '@/lib/api/auth';
 import { withIdempotency } from '@/lib/api/idempotency';
-import { getProductById, MOCK_PRODUCTS } from '@/lib/mock/products';
+import { getProductRepository } from '@/lib/data';
 import { recordRequest } from '@/lib/api/metrics';
 import type { WarrantyClaim, PaginatedResponse } from '@/lib/types';
 
@@ -22,7 +22,7 @@ export function OPTIONS(request: NextRequest) {
 }
 
 async function listClaims(req: NextRequest, productId: string): Promise<NextResponse> {
-  const product = getProductById(productId);
+  const product = await getProductRepository().getById(productId);
   if (!product) {
     return apiError(req, 404, ErrorCode.VALIDATION_ERROR, `Product not found: ${productId}`);
   }
@@ -48,13 +48,18 @@ async function fileClaim(
   productId: string,
   rawBody: string,
 ): Promise<NextResponse> {
-  const product = getProductById(productId);
+  const product = await getProductRepository().getById(productId);
   if (!product) {
     return apiError(req, 404, ErrorCode.VALIDATION_ERROR, `Product not found: ${productId}`);
   }
 
   if (!product.warranty) {
-    return apiError(req, 400, ErrorCode.VALIDATION_ERROR, 'No warranty registered for this product');
+    return apiError(
+      req,
+      400,
+      ErrorCode.VALIDATION_ERROR,
+      'No warranty registered for this product',
+    );
   }
 
   if (product.warranty.voided) {
@@ -93,15 +98,7 @@ async function fileClaim(
     updatedAt: Date.now(),
   };
 
-  // TODO: persist to database / submit to contract
-  const idx = MOCK_PRODUCTS.findIndex((p) => p.id === productId);
-  if (idx !== -1) {
-    const existing = MOCK_PRODUCTS[idx].warrantyClaims ?? [];
-    MOCK_PRODUCTS[idx] = {
-      ...MOCK_PRODUCTS[idx],
-      warrantyClaims: [...existing, claim],
-    };
-  }
+  await getProductRepository().addWarrantyClaim(productId, claim);
 
   return withCors(req, withCorrelationId(req, NextResponse.json(claim, { status: 201 })));
 }
@@ -111,11 +108,21 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
   const start = Date.now();
-  const limited = applyRateLimit(request, 'GET /api/v1/products/[id]/warranty/claims', RATE_LIMIT_PRESETS.publicRead);
-  if (limited) { recordRequest('GET /api/v1/products/[id]/warranty/claims', 429, Date.now() - start); return limited; }
+  const limited = applyRateLimit(
+    request,
+    'GET /api/v1/products/[id]/warranty/claims',
+    RATE_LIMIT_PRESETS.publicRead,
+  );
+  if (limited) {
+    recordRequest('GET /api/v1/products/[id]/warranty/claims', 429, Date.now() - start);
+    return limited;
+  }
 
   const auth = await authenticateApiRequest(request, 'partner');
-  if (auth.error) { recordRequest('GET /api/v1/products/[id]/warranty/claims', 401, Date.now() - start); return auth.error; }
+  if (auth.error) {
+    recordRequest('GET /api/v1/products/[id]/warranty/claims', 401, Date.now() - start);
+    return auth.error;
+  }
 
   const { id } = await params;
   if (!id) return apiError(request, 400, ErrorCode.VALIDATION_ERROR, 'Invalid product ID');
@@ -130,18 +137,26 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
   const start = Date.now();
-  const limited = applyRateLimit(request, 'POST /api/v1/products/[id]/warranty/claims', RATE_LIMIT_PRESETS.default);
-  if (limited) { recordRequest('POST /api/v1/products/[id]/warranty/claims', 429, Date.now() - start); return limited; }
+  const limited = applyRateLimit(
+    request,
+    'POST /api/v1/products/[id]/warranty/claims',
+    RATE_LIMIT_PRESETS.default,
+  );
+  if (limited) {
+    recordRequest('POST /api/v1/products/[id]/warranty/claims', 429, Date.now() - start);
+    return limited;
+  }
 
   const auth = await authenticateApiRequest(request, 'partner');
-  if (auth.error) { recordRequest('POST /api/v1/products/[id]/warranty/claims', 401, Date.now() - start); return auth.error; }
+  if (auth.error) {
+    recordRequest('POST /api/v1/products/[id]/warranty/claims', 401, Date.now() - start);
+    return auth.error;
+  }
 
   const { id } = await params;
   if (!id) return apiError(request, 400, ErrorCode.VALIDATION_ERROR, 'Invalid product ID');
 
-  const response = await withIdempotency(request, (req, rawBody) =>
-    fileClaim(req, id, rawBody),
-  );
+  const response = await withIdempotency(request, (req, rawBody) => fileClaim(req, id, rawBody));
   recordRequest('POST /api/v1/products/[id]/warranty/claims', response.status, Date.now() - start);
   return response;
 }

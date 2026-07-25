@@ -13,7 +13,7 @@ import { apiError, withCorrelationId, ErrorCode } from '@/lib/api/errors';
 import { applyRateLimit, RATE_LIMIT_PRESETS } from '@/lib/api/rateLimit';
 import { authenticateApiRequest } from '@/lib/api/auth';
 import { withIdempotency } from '@/lib/api/idempotency';
-import { getProductById, getEventsByProductId, MOCK_EVENTS } from '@/lib/mock/products';
+import { getEventRepository, getProductRepository } from '@/lib/data';
 import { recordRequest } from '@/lib/api/metrics';
 import { validateEventMetadata } from '@/lib/api/eventMetadataSchemas';
 import {
@@ -34,7 +34,7 @@ async function listEvents(
   apiKey: string,
 ): Promise<NextResponse> {
   // Verify product exists
-  const product = getProductById(productId);
+  const product = await getProductRepository().getById(productId);
   if (!product) {
     return apiError(req, 404, ErrorCode.VALIDATION_ERROR, `Product not found: ${productId}`);
   }
@@ -46,7 +46,7 @@ async function listEvents(
     return apiError(req, 400, ErrorCode.VALIDATION_ERROR, 'Invalid offset or limit');
   }
 
-  const allEvents = getEventsByProductId(productId);
+  const allEvents = await getEventRepository().listByProduct(productId);
   const items = allEvents.slice(offset, offset + limit);
 
   const response: PaginatedResponse<TrackingEvent> = {
@@ -66,7 +66,7 @@ async function addEvent(
   rawBody: string,
 ): Promise<NextResponse> {
   // Verify product exists
-  const product = getProductById(productId);
+  const product = await getProductRepository().getById(productId);
   if (!product) {
     return apiError(req, 404, ErrorCode.VALIDATION_ERROR, `Product not found: ${productId}`);
   }
@@ -150,8 +150,7 @@ async function addEvent(
     seq: acceptedSeq,
   };
 
-  // TODO: Persist to database instead of mock
-  MOCK_EVENTS.push(newEvent);
+  await getEventRepository().append(newEvent);
 
   // Enqueue async validation job (#475)
   const stableId = newEvent.stableId ?? `${productId}-${acceptedSeq}-${newEvent.timestamp}`;
@@ -178,7 +177,7 @@ async function addEventsBatch(
   }
 
   const results: Array<Record<string, unknown>> = [];
-  const product = getProductById(productId);
+  const product = await getProductRepository().getById(productId);
   if (!product) {
     return apiError(req, 404, ErrorCode.VALIDATION_ERROR, `Product not found: ${productId}`);
   }
@@ -241,7 +240,7 @@ async function addEventsBatch(
       timestamp: Date.now(),
       metadata,
     };
-    MOCK_EVENTS.push(newEvent);
+    await getEventRepository().append(newEvent);
 
     resEntry.success = true;
     resEntry.event = newEvent;
