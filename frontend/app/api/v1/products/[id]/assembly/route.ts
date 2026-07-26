@@ -15,6 +15,8 @@ import { authenticateApiRequest } from '@/lib/api/auth';
 import { withIdempotency } from '@/lib/api/idempotency';
 import { getProductRepository } from '@/lib/data';
 import { recordRequest } from '@/lib/api/metrics';
+import { productAssemblyBodySchema } from '@/lib/api/schemas';
+import { handleValidationError, parseJsonBody } from '@/lib/api/validation';
 import type { ProductAssembly } from '@/lib/types';
 
 export function OPTIONS(request: NextRequest) {
@@ -22,7 +24,7 @@ export function OPTIONS(request: NextRequest) {
 }
 
 async function getAssembly(req: NextRequest, productId: string): Promise<NextResponse> {
-  const product = await getProductRepository().getById(productId);
+  const product = getProductById(productId);
   if (!product) {
     return apiError(req, 404, ErrorCode.VALIDATION_ERROR, `Product not found: ${productId}`);
   }
@@ -50,44 +52,29 @@ async function registerAssembly(
     return apiError(req, 404, ErrorCode.VALIDATION_ERROR, `Product not found: ${productId}`);
   }
 
-  let payload: unknown;
+  let body;
   try {
-    payload = JSON.parse(rawBody);
-  } catch {
-    return apiError(req, 400, ErrorCode.INVALID_PAYLOAD, 'Invalid JSON');
-  }
-
-  const body = payload as Record<string, unknown>;
-
-  if (!Array.isArray(body.componentIds) || body.componentIds.length === 0) {
-    return apiError(req, 400, ErrorCode.MISSING_FIELDS, 'componentIds must be a non-empty array');
-  }
-
-  if (!body.componentIds.every((id: unknown) => typeof id === 'string')) {
-    return apiError(req, 400, ErrorCode.VALIDATION_ERROR, 'componentIds must be string[]');
-  }
-
-  if (body.componentIds.length > 50) {
-    return apiError(req, 400, ErrorCode.VALIDATION_ERROR, 'componentIds exceeds maximum of 50');
+    body = parseJsonBody(req, rawBody, productAssemblyBodySchema);
+  } catch (error) {
+    return (
+      handleValidationError(req, error) ??
+      apiError(req, 400, ErrorCode.INVALID_PAYLOAD, 'Invalid JSON')
+    );
   }
 
   // Validate all component products exist
-  const productRepository = getProductRepository();
-  for (const cid of body.componentIds as string[]) {
-    if (!(await productRepository.getById(cid))) {
+  for (const cid of body.componentIds) {
+    if (!getProductById(cid)) {
       return apiError(req, 400, ErrorCode.VALIDATION_ERROR, `Component product not found: ${cid}`);
     }
   }
 
-  const description = typeof body.description === 'string' ? body.description : '';
-  const registeredBy = typeof body.registeredBy === 'string' ? body.registeredBy : 'unknown';
-
   const assembly: ProductAssembly = {
     parentId: productId,
-    componentIds: body.componentIds as string[],
-    registeredBy,
+    componentIds: body.componentIds,
+    registeredBy: body.registeredBy,
     registeredAt: Date.now(),
-    description,
+    description: body.description,
   };
 
   await productRepository.setAssembly(productId, assembly);

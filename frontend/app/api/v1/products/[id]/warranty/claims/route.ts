@@ -15,6 +15,8 @@ import { authenticateApiRequest } from '@/lib/api/auth';
 import { withIdempotency } from '@/lib/api/idempotency';
 import { getProductRepository } from '@/lib/data';
 import { recordRequest } from '@/lib/api/metrics';
+import { paginationQuerySchema, warrantyClaimBodySchema } from '@/lib/api/schemas';
+import { handleValidationError, parseJsonBody, parseQuery } from '@/lib/api/validation';
 import type { WarrantyClaim, PaginatedResponse } from '@/lib/types';
 
 export function OPTIONS(request: NextRequest) {
@@ -27,17 +29,24 @@ async function listClaims(req: NextRequest, productId: string): Promise<NextResp
     return apiError(req, 404, ErrorCode.VALIDATION_ERROR, `Product not found: ${productId}`);
   }
 
-  const offset = parseInt(req.nextUrl.searchParams.get('offset') ?? '0', 10);
-  const limit = Math.min(parseInt(req.nextUrl.searchParams.get('limit') ?? '50', 10), 100);
+  let query;
+  try {
+    query = parseQuery(req, paginationQuerySchema);
+  } catch (error) {
+    return (
+      handleValidationError(req, error) ??
+      apiError(req, 400, ErrorCode.VALIDATION_ERROR, 'Request validation failed')
+    );
+  }
 
   const allClaims = product.warrantyClaims ?? [];
-  const items = allClaims.slice(offset, offset + limit);
+  const items = allClaims.slice(query.offset, query.offset + query.limit);
 
   const response: PaginatedResponse<WarrantyClaim> = {
     items,
     total: allClaims.length,
-    offset,
-    limit,
+    offset: query.offset,
+    limit: query.limit,
   };
 
   return withCors(req, withCorrelationId(req, NextResponse.json(response, { status: 200 })));
@@ -66,34 +75,23 @@ async function fileClaim(
     return apiError(req, 400, ErrorCode.VALIDATION_ERROR, 'Warranty has been voided');
   }
 
-  let payload: unknown;
+  let body;
   try {
-    payload = JSON.parse(rawBody);
-  } catch {
-    return apiError(req, 400, ErrorCode.INVALID_PAYLOAD, 'Invalid JSON');
-  }
-
-  const body = payload as Record<string, unknown>;
-
-  if (typeof body.description !== 'string' || !body.description.trim()) {
-    return apiError(req, 400, ErrorCode.MISSING_FIELDS, 'Missing or invalid: description');
-  }
-  if (typeof body.claimant !== 'string' || !body.claimant.trim()) {
-    return apiError(req, 400, ErrorCode.MISSING_FIELDS, 'Missing or invalid: claimant');
-  }
-
-  const proofRef = typeof body.proofRef === 'string' ? body.proofRef : '';
-  if (proofRef.length > 512) {
-    return apiError(req, 400, ErrorCode.VALIDATION_ERROR, 'proofRef exceeds 512 characters');
+    body = parseJsonBody(req, rawBody, warrantyClaimBodySchema);
+  } catch (error) {
+    return (
+      handleValidationError(req, error) ??
+      apiError(req, 400, ErrorCode.INVALID_PAYLOAD, 'Invalid JSON')
+    );
   }
 
   const claim: WarrantyClaim = {
     claimId: `claim-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     productId,
-    claimant: body.claimant as string,
+    claimant: body.claimant,
     filedAt: Date.now(),
-    description: body.description as string,
-    proofRef,
+    description: body.description,
+    proofRef: body.proofRef,
     status: 'Pending',
     updatedAt: Date.now(),
   };

@@ -15,6 +15,8 @@ import { authenticateApiRequest } from '@/lib/api/auth';
 import { withIdempotency } from '@/lib/api/idempotency';
 import { getProductRepository } from '@/lib/data';
 import { recordRequest } from '@/lib/api/metrics';
+import { warrantyBodySchema } from '@/lib/api/schemas';
+import { handleValidationError, parseJsonBody } from '@/lib/api/validation';
 import type { WarrantyInfo } from '@/lib/types';
 
 export function OPTIONS(request: NextRequest) {
@@ -45,38 +47,23 @@ async function registerWarranty(
     return apiError(req, 404, ErrorCode.VALIDATION_ERROR, `Product not found: ${productId}`);
   }
 
-  let payload: unknown;
+  let body;
   try {
-    payload = JSON.parse(rawBody);
-  } catch {
-    return apiError(req, 400, ErrorCode.INVALID_PAYLOAD, 'Invalid JSON');
-  }
-
-  const body = payload as Record<string, unknown>;
-
-  const durationSeconds = typeof body.durationSeconds === 'number' ? body.durationSeconds : 0;
-  if (durationSeconds < 0) {
-    return apiError(req, 400, ErrorCode.VALIDATION_ERROR, 'durationSeconds must be >= 0');
-  }
-
-  const terms = typeof body.terms === 'string' ? body.terms : '';
-  const termsRef = typeof body.termsRef === 'string' ? body.termsRef : '';
-  const issuer = typeof body.issuer === 'string' ? body.issuer : 'unknown';
-
-  if (terms.length > 1024) {
-    return apiError(req, 400, ErrorCode.VALIDATION_ERROR, 'terms exceeds 1024 characters');
-  }
-  if (termsRef.length > 512) {
-    return apiError(req, 400, ErrorCode.VALIDATION_ERROR, 'termsRef exceeds 512 characters');
+    body = parseJsonBody(req, rawBody, warrantyBodySchema);
+  } catch (error) {
+    return (
+      handleValidationError(req, error) ??
+      apiError(req, 400, ErrorCode.INVALID_PAYLOAD, 'Invalid JSON')
+    );
   }
 
   const warranty: WarrantyInfo = {
     productId,
-    durationSeconds,
-    issuer,
+    durationSeconds: body.durationSeconds,
+    issuer: body.issuer,
     issuedAt: Date.now(),
-    terms,
-    termsRef,
+    terms: body.terms,
+    termsRef: body.termsRef,
     voided: false,
     voidedAt: 0,
   };

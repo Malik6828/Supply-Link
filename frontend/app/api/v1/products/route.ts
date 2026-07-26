@@ -15,6 +15,8 @@ import { authenticateApiRequest } from '@/lib/api/auth';
 import { withIdempotency } from '@/lib/api/idempotency';
 import { getProductRepository } from '@/lib/data';
 import { recordRequest } from '@/lib/api/metrics';
+import { productCreateBodySchema, productListQuerySchema } from '@/lib/api/schemas';
+import { handleValidationError, parseJsonBody, parseQuery } from '@/lib/api/validation';
 import type { Product, PaginatedResponse } from '@/lib/types';
 
 export function OPTIONS(request: NextRequest) {
@@ -22,12 +24,7 @@ export function OPTIONS(request: NextRequest) {
 }
 
 async function listProducts(req: NextRequest, apiKey: string): Promise<NextResponse> {
-  const offset = parseInt(req.nextUrl.searchParams.get('offset') ?? '0', 10);
-  const limit = Math.min(parseInt(req.nextUrl.searchParams.get('limit') ?? '50', 10), 100);
-
-  if (offset < 0 || limit < 1) {
-    return apiError(req, 400, ErrorCode.VALIDATION_ERROR, 'Invalid offset or limit');
-  }
+  const { offset, limit } = parseQuery(req, productListQuerySchema);
 
   const page = await getProductRepository().list({ offset, limit });
 
@@ -46,73 +43,49 @@ async function registerProduct(
   apiKey: string,
   rawBody: string,
 ): Promise<NextResponse> {
-  let payload: unknown;
   try {
-    payload = JSON.parse(rawBody);
-  } catch {
-    return apiError(req, 400, ErrorCode.INVALID_PAYLOAD, 'Invalid JSON');
+    const body = parseJsonBody(req, rawBody, productCreateBodySchema);
+
+    // Create new product
+    const newProduct: Product = {
+      id: `prod-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: body.name,
+      origin: body.origin,
+      owner: body.owner,
+      timestamp: Date.now(),
+      active: true,
+      authorizedActors: body.authorizedActors,
+      requiredSignatures: body.requiredSignatures,
+      imageUrl: body.imageUrl,
+      ownershipHistory: [
+        {
+          owner: body.owner,
+          transferredAt: Date.now(),
+        },
+      ],
+    };
+
+    // TODO: Persist to database instead of mock
+    MOCK_PRODUCTS.push(newProduct);
+
+    // Notify webhooks of the new product registration
+    try {
+      const { notifyWebhooksOfProductEvent } = await import('@/lib/webhooks/processor');
+      await notifyWebhooksOfProductEvent('product_registered', newProduct.id, {
+        product: newProduct,
+      });
+    } catch (err) {
+      console.error('Failed to notify webhooks of product registration:', err);
+      // Don't fail the request if webhook notification fails
+    }
+
+    return withCors(req, withCorrelationId(req, NextResponse.json(newProduct, { status: 201 })));
+  } catch (error) {
+    return (
+      handleValidationError(req, error) ??
+      apiError(req, 500, ErrorCode.INTERNAL_ERROR, 'Failed to register product')
+    );
   }
-
-  const body = payload as Record<string, unknown>;
-
-  // Validate required fields
-  if (typeof body.name !== 'string' || !body.name.trim()) {
-    return apiError(req, 400, ErrorCode.MISSING_FIELDS, 'Missing or invalid: name');
-  }
-  if (typeof body.origin !== 'string' || !body.origin.trim()) {
-    return apiError(req, 400, ErrorCode.MISSING_FIELDS, 'Missing or invalid: origin');
-  }
-  if (typeof body.owner !== 'string' || !body.owner.trim()) {
-    return apiError(req, 400, ErrorCode.MISSING_FIELDS, 'Missing or invalid: owner');
-  }
-
-  // Validate optional arrays
-  const authorizedActors = Array.isArray(body.authorizedActors) ? body.authorizedActors : [];
-  if (!authorizedActors.every((a) => typeof a === 'string')) {
-    return apiError(req, 400, ErrorCode.VALIDATION_ERROR, 'authorizedActors must be string[]');
-  }
-
-  const requiredSignatures =
-    typeof body.requiredSignatures === 'number' ? body.requiredSignatures : 1;
-  if (requiredSignatures < 0) {
-    return apiError(req, 400, ErrorCode.VALIDATION_ERROR, 'requiredSignatures must be >= 0');
-  }
-
-  const imageUrl = typeof body.imageUrl === 'string' ? body.imageUrl : undefined;
-
-  // Create new product
-  const newProduct: Product = {
-    id: `prod-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    name: body.name as string,
-    origin: body.origin as string,
-    owner: body.owner as string,
-    timestamp: Date.now(),
-    active: true,
-    authorizedActors,
-    requiredSignatures,
-    imageUrl,
-    ownershipHistory: [
-      {
-        owner: body.owner as string,
-        transferredAt: Date.now(),
-      },
-    ],
-  };
-
-  await getProductRepository().create(newProduct);
-
-  // Notify webhooks of the new product registration
-  try {
-    const { notifyWebhooksOfProductEvent } = await import('@/lib/webhooks/processor');
-    await notifyWebhooksOfProductEvent('product_registered', newProduct.id, {
-      product: newProduct,
-    });
-  } catch (err) {
-    console.error('Failed to notify webhooks of product registration:', err);
-    // Don't fail the request if webhook notification fails
-  }
-
-  return withCors(req, withCorrelationId(req, NextResponse.json(newProduct, { status: 201 })));
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -132,7 +105,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return auth.error;
   }
 
-  const response = await listProducts(request, auth.apiKey!);
+  let response: NextResponse;
+  try {
+    response = await listProducts(request, auth.apiKey!);
+  } catch (error) {
+    response =
+      handleValidationError(request, error) ??
+      apiError(request, 500, ErrorCode.INTERNAL_ERROR, 'Failed to list products');
+  }
   recordRequest('GET /api/v1/products', response.status, Date.now() - start);
   return response;
 }
